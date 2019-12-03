@@ -1,0 +1,216 @@
+config:
+  boot.autostart: "false"
+  raw.lxc: |-
+    lxc.apparmor.profile = unconfined
+    lxc.cgroup.devices.allow = a
+    lxc.cap.drop =
+    lxc.mount.auto = cgroup:rw proc:rw sys:ro
+  security.nesting: "true"
+  security.privileged: "true"
+  user.user-data: |
+    #cloud-config
+    users:
+      - name: rafaeldtinoco
+        ssh_authorized_keys:
+          - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC9Bkz8h8fhJI9C3Watz22bykuccYpKaBMrGjBt8A8zRvlYqJS+MSc+/uY6krujyBsuELhkCdO/NH5slDNfGLu9NKKdIJcwCm55NqGGfMFCbKn4OdqZFyOWDMk4kydj5ohMNGQV1lgMDdwIWVAasjVh0Td5Zbk3F966H5WssFntbgvoZcAMwpZdiQkZuc2Wbnj6CMzj+Y0hnhSJdD9JrXlKIJZuKC5ZxFElyo9wPbQPy7SUebe3Gr/rNrBTYIXxqIqORxmuxqQj4sVunkXlqKJKuPVOHg5xrB1WJ4E1tz5vWFApe2s1aWvYs/BXUHlKLa/uyJiNAn008okhgCyEY8z7
+        sudo: ['ALL=(ALL) NOPASSWD:ALL']
+        groups: [root,sudo,staff]
+        shell: /bin/bash
+    disable_root: false
+    network:
+      version: 1
+      config:
+      - type: physical
+        name: eth0
+        subnets:
+          - type: dhcp
+    proxy: http://192.168.100.252:3128/
+    http_proxy: http://192.168.100.252:3128/
+    ftp_proxy: http://192.168.100.252:3128/
+    https_proxy: http://192.168.100.252:3128/
+    runcmd:
+      - systemctl stop snapd.service
+      - systemctl stop unattended-upgrades
+      - systemctl stop systemd-remount-fs
+      - system reset-failed
+      - passwd -d root
+      - passwd -d rafaeldtinoco
+      - echo "debconf debconf/priority select low" | sudo debconf-set-selections
+      - DEBIAN_FRONTEND=noninteractive dpkg-reconfigure debconf
+      - DEBIAN_FRONTEND=noninteractive apt-get update -y
+      - DEBIAN_FRONTEND=noninteractive apt-get dist-upgrade -y
+      - DEBIAN_FRONTEND=noninteractive apt-get autoremove -y
+      - DEBIAN_FRONTEND=noninteractive apt-get autoclean -y
+      - systemctl disable systemd-remount-fs
+      - systemctl disable unattended-upgrades
+      - systemctl disable apt-daily-upgrade.timer
+      - systemctl disable apt-daily.timer
+      - systemctl disable accounts-daemon.service
+      - systemctl disable motd-news.timer
+      - systemctl disable irqbalance.service
+      - systemctl disable rsync.service
+      - systemctl disable ebtables.service
+      - systemctl disable pollinate.service
+      - systemctl disable ufw.service
+      - systemctl disable apparmor.service
+      - systemctl disable apport-autoreport.path
+      - systemctl disable apport-forward.socket
+      - systemctl disable iscsi.service
+      - systemctl disable open-iscsi.service
+      - systemctl disable iscsid.socket
+      - systemctl disable multipathd.socket
+      - systemctl disable multipath-tools.service
+      - systemctl disable multipathd.service
+      - systemctl disable lvm2-monitor.service
+      - systemctl disable lvm2-lvmpolld.socket
+      - systemctl disable lvm2-lvmetad.socket
+    packages:
+      - hello
+      - locales
+      - less
+      - vim
+      - rsync
+      - bridge-utils
+      - vlan
+      - net-tools
+      - ncurses-term
+      - iputils-arping
+      - iputils-ping
+      - iputils-tracepath
+      - traceroute
+      - mtr-tiny
+      - tcpdump
+      - dnsutils
+      - build-essential
+      - devscripts
+      - ubuntu-dev-tools
+      - linux-headers-generic
+      - gdb
+      - strace
+      - ltrace
+      - lsof
+    power_state:
+      delay: 'now'
+      mode: reboot
+      timeout: 10
+      condition: True
+    final_message: "The system is finally up! Enjoy!"
+    write_files:
+      - path: /etc/ssh/sshd_config
+        content: |
+          Port 22
+          AddressFamily any
+          SyslogFacility AUTH
+          LogLevel INFO
+          PermitRootLogin yes
+          PubkeyAuthentication yes
+          PasswordAuthentication yes
+          ChallengeResponseAuthentication no
+          GSSAPIAuthentication no
+          HostbasedAuthentication no
+          PermitEmptyPasswords no
+          UsePAM yes
+          IgnoreUserKnownHosts yes
+          IgnoreRhosts yes
+          X11Forwarding yes
+          X11DisplayOffset 10
+          X11UseLocalhost yes
+          PermitTTY yes
+          PrintMotd no
+          TCPKeepAlive yes
+          PermitTunnel yes
+          Banner none
+          AcceptEnv LANG LC_* EDITOR PAGER SYSTEMD_EDITOR
+          Subsystem	sftp /usr/lib/openssh/sftp-server
+      - path: /etc/ssh/ssh_config
+        content: |
+          Host *
+            ForwardAgent no
+            ForwardX11 no
+            PasswordAuthentication yes
+            CheckHostIP no
+            AddressFamily any
+            SendEnv LANG LC_* EDITOR PAGER
+            StrictHostKeyChecking no
+            HashKnownHosts yes
+      - path: /etc/sudoers
+        content: |
+            Defaults env_keep += "LANG LANGUAGE LINGUAS LC_* _XKB_CHARSET"
+            Defaults env_keep += "HOME EDITOR SYSTEMD_EDITOR PAGER"
+            Defaults env_keep += "XMODIFIERS GTK_IM_MODULE QT_IM_MODULE QT_IM_SWITCHER"
+            Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            Defaults logfile=/var/log/sudo.log,loglinelen=0
+            Defaults !syslog, !pam_session
+            root ALL=(ALL) NOPASSWD: ALL
+            %wheel ALL=(ALL) NOPASSWD: ALL
+            %sudo ALL=(ALL) NOPASSWD: ALL
+            rafaeldtinoco ALL=(ALL) NOPASSWD: ALL
+    apt:
+      preserve_sources_list: false
+      primary:
+        - arches: [default]
+          uri: http://br.archive.ubuntu.com/ubuntu
+      security:
+        - arches: [default]
+          uri: http://security.ubuntu.com/ubuntu
+      sources_list: |
+        # binaries
+        deb $MIRROR $RELEASE main restricted universe multiverse
+        deb $MIRROR $RELEASE-updates main restricted universe multiverse
+        deb $MIRROR $RELEASE-proposed main restricted universe multiverse
+        # deb $MIRROR $RELEASE-backports main restricted universe multiverse
+        deb $SECURITY $RELEASE-security universe multiverse
+        # sources
+        deb-src $MIRROR $RELEASE main restricted universe multiverse
+        deb-src $MIRROR $RELEASE-updates main restricted universe multiverse
+        deb-src $MIRROR $RELEASE-proposed main restricted universe multiverse
+        # deb-src $MIRROR $RELEASE-backports main restricted universe multiverse
+        deb-src $SECURITY $RELEASE-security universe multiverse
+      conf: |
+        Acquire::http::Proxy "http://192.168.100.252:3128/";
+        Dpkg::Options {
+          "--force-confdef";
+          "--force-confold";
+        };
+      sources:
+        debug.list:
+          source: |
+            # debug symbols
+            # deb http://ddebs.ubuntu.com $RELEASE main restricted universe multiverse
+            # deb http://ddebs.ubuntu.com $RELEASE-updates main restricted universe multiverse
+            # deb http://ddebs.ubuntu.com $RELEASE-proposed main restricted universe multiverse
+          keyid: C8CAB6595FDFF622
+description: Devel LXD profile
+devices:
+  eth0:
+    name: eth0
+    nictype: bridged
+    parent: lxdbr0
+    type: nic
+  fontsdir:
+    path: /usr/share/fonts
+    source: /usr/share/fonts
+    type: disk
+  iconsdir:
+    path: /usr/share/icons
+    source: /usr/share/icons
+    type: disk
+  themesdir:
+    path: /usr/share/themes
+    source: /usr/share/themes
+    type: disk
+  homedir:
+    path: /home
+    source: /home
+    type: disk
+  root:
+    path: /
+    pool: lxd
+    type: disk
+  rootdir:
+    path: /root
+    source: /root
+    type: disk
+name: devel
+used_by: []
+
