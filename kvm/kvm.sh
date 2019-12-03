@@ -94,11 +94,7 @@ done
 
 qcow2vol="$pooldir/$hostname-disk01.qcow2"
 qcow2size=30G
-
-[ -f $qcow2vol ] && {
-  echo "error: qcow2 volume $qcow2vol already exists"
-  exit 1
-}
+checknotfile $qcow2vol
 
 # extra packages to install during debootstrap phase
 
