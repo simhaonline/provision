@@ -1,6 +1,8 @@
 #cloud-config
 users:
   - name: CHANGE_USERNAME
+    ssh_authorized_keys:
+    - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC9Bkz8h8fhJI9C3Watz22bykuccYpKaBMrGjBt8A8zRvlYqJS+MSc+/uY6krujyBsuELhkCdO/NH5slDNfGLu9NKKdIJcwCm55NqGGfMFCbKn4OdqZFyOWDMk4kydj5ohMNGQV1lgMDdwIWVAasjVh0Td5Zbk3F966H5WssFntbgvoZcAMwpZdiQkZuc2Wbnj6CMzj+Y0hnhSJdD9JrXlKIJZuKC5ZxFElyo9wPbQPy7SUebe3Gr/rNrBTYIXxqIqORxmuxqQj4sVunkXlqKJKuPVOHg5xrB1WJ4E1tz5vWFApe2s1aWvYs/BXUHlKLa/uyJiNAn008okhgCyEY8z7
     ssh_import_id: CHANGE_LAUNCHPAD_ID
     sudo: ['ALL=(ALL) NOPASSWD:ALL']
     groups: [root,sudo,staff]
