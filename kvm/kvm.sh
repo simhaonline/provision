@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 
 # bootstraps a qcow2 image using debootstrap
 # feeds user-data cloud-init yaml file into it
