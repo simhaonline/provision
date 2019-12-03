@@ -11,13 +11,14 @@ fi
 
 olddir=$(pwd)
 scriptdir=$(dirname $0) ; [ "$scriptdir" == "." ] && scriptdir=$(pwd)
-cd /tmp
 
 # includes
 
 . $scriptdir/functions.sh
 . $scriptdir/prereqs.sh
 . $scriptdir/usage.sh
+
+cd /tmp
 
 # prereqs
 
