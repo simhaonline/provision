@@ -9,16 +9,13 @@ fi
 
 # directories
 
-olddir=$(pwd)
-scriptdir=$(dirname $0) ; [ "$scriptdir" == "." ] && scriptdir=$(pwd)
+scriptdir=$(dirname $0)
 
 # includes
 
 . $scriptdir/functions.sh
 . $scriptdir/prereqs.sh
 . $scriptdir/usage.sh
-
-cd /tmp
 
 # prereqs
 
@@ -48,11 +45,18 @@ fi
 [ "$hostname" == "" ] && hostname="vmtest123"
 [ "$vcpus" == "" ] && vcpus=2
 [ "$ramgb" == "" ] && ramgb=2
-[ "$template" == "" ] && template="default"
+[ "$cloudinit" == "" ] && cloudinit="default"
 [ "$distro" == "" ] && distro=$(ubuntu-distro-info --stable)
 [ "$launchpad_id" == "" ] && launchpad_id="rafaeldtinoco"
 [ "$username" == "" ] && username="ubuntu"
 [ "$repository" == "" ] && repository="http://br.archive.ubuntu.com/ubuntu"
+
+distro_devel=0
+if [ "$distro" == "focal" ]
+then
+    distro_devel=1
+    distro="eoan"
+fi
 
 # environmetal
 
@@ -63,8 +67,12 @@ newmac=$(printf '52:54:00:%02X:%02X:%02X\n' $((RANDOM % 256)) $((RANDOM % 256)) 
 
 # temp dirs
 
+cd /tmp
+
 target=$(mktemp -d XXXXXX)   # temporary debootstrap dir
 fattarget=$(mktemp -d XXXXX) # temporary user-data mount dir
+
+cd -
 
 targetdir="/tmp/$target"
 checkdir $targetdir
@@ -114,12 +122,12 @@ cleanup() {
   sync
   [ $clean_qcow2 -eq 1 ] && rm $qcow2vol
 
-  # rm -f /tmp/vm$$.xml
+  rm -f /tmp/vm$$.xml
 
   rmdir $targetdir
   rmdir $fattargetdir
 
-  cd $olddir
+  echo "attention: logs at $output"
 }
 
 trap cleanup EXIT
@@ -177,7 +185,7 @@ checkcond mount -o bind /dev/pts $targetdir/dev/pts
 
 echo "- setting hostname"
 
-echo $hostname | tee $targetdir/etc/hostname > /dev/null 2>&1
+echo $hostname | teeshush "$targetdir/etc/hostname"
 
 echo "- adjusting accounts"
 
@@ -189,7 +197,7 @@ echo "- /etc/fstab"
 
 echo """## /etc/fstab
 LABEL=MYROOT / ext4 noatime,nodiratime,relatime,discard,errors=remount-ro 0 1
-## end of file""" | tee $targetdir/etc/fstab
+## end of file""" | teeshush "$targetdir/etc/fstab"
 
 echo "- /etc/network/interfaces"
 
@@ -201,7 +209,7 @@ iface lo inet loopback
 auto eth0
 iface eth0 inet dhcp
 
-end of file""" | tee $targetdir/etc/network/interfaces
+end of file""" | teeshush "$targetdir/etc/network/interfaces"
 
 echo "- /etc/modules"
 
@@ -213,7 +221,7 @@ virtio_pci
 virtio_ring
 virtio
 ext4
-## end of file""" | tee $targetdir/etc/modules
+## end of file""" | teeshush "$targetdir/etc/modules"
 
 echo "- /etc/default/grub"
 
@@ -229,27 +237,17 @@ GRUB_SERIAL_COMMAND=\"serial --speed=115200 --unit=0 --word=8 --parity=no --stop
 GRUB_DISABLE_LINUX_UUID=\"true\"
 GRUB_DISABLE_RECOVERY=\"true\"
 GRUB_DISABLE_OS_PROBER=\"true\"
-## end of file""" | tee $targetdir/etc/default/grub
-
-echo "- /etc/initramfs-tools/modules"
-
-echo """## /etc/initramfs-tools/modules
-virtio_balloon
-virtio_blk
-virtio_net
-virtio_pci
-virtio_ring
-virtio
-ext4
-## end of file""" | tee $targetdir/etc/initramfs-tools/modules
+## end of file""" | teeshush "$targetdir/etc/default/grub"
 
 echo "- /etc/apt/sources.list"
+
+[ $distro_devel -eq 1 ] && distro="focal"
 
 echo """## /etc/apt/sources.list
 deb $repository $distro main restricted universe multiverse
 deb $repository $distro-updates main restricted universe multiverse
 deb $repository $distro-proposed main restricted universe multiverse
-## end of file""" | tee $target/etc/apt/sources.list
+## end of file""" | teeshush "$targetdir/etc/apt/sources.list"
 
 echo "- update and upgrade"
 
@@ -287,15 +285,15 @@ export vcpus=$vcpus
 export qemubin=$qemubin
 export qcow2vol=$qcow2vol
 
-cat $scriptdir/vanilla.xml | envsubst > /tmp/vm$$.xml
+cat $scriptdir/libvirt/$libvirt.xml | envsubst > /tmp/vm$$.xml
 
 checkcond virsh define /tmp/vm$$.xml
 
 echo "- meta-data and user-data"
 
-checkcond cp $scriptdir/$template.yaml $fattargetdir/user-data
+checkcond cp $scriptdir/cloud-init/$cloudinit.yaml $fattargetdir/user-data
 
-checkcond echo "\"{instance-id: $uuid)}\"" | tee "$fattargetdir/meta-data"
+checkcond echo "\"{instance-id: $uuid)}\"" | teeshush "$fattargetdir/meta-data"
 
 echo "- adjust user-data"
 

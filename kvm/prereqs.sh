@@ -22,6 +22,9 @@ kvmprereqs() {
 
 prereqs() {
 
+  output="/tmp/kvm.log"
+  echo > $output
+
   if [[ "$0" =~ kvm.sh ]]
   then
     kvmprereqs

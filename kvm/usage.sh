@@ -7,12 +7,12 @@ getoptkvm() {
   vcpus=""
   ramgb=""
   hostname=""
-  template=""
+  cloudinit=""
   username=""
   launchpad_id=""
   proxy=""
 
-  while getopts ":c:m:n:t:d:p:l:u:r:h" opt; do
+  while getopts ":c:m:n:t:d:p:l:u:r:i:h" opt; do
     # shellcheck disable=SC2220
     case ${opt} in
     c)
@@ -28,8 +28,8 @@ getoptkvm() {
       echo "option: hostname=$hostname"
       ;;
     t)
-      template=$OPTARG
-      echo "option: template=$template"
+      cloudinit=$OPTARG
+      echo "option: cloudinit=cloud-init/$cloudinit.yaml"
       ;;
     d)
       distro=$OPTARG
@@ -51,6 +51,10 @@ getoptkvm() {
       repository=$OPTARG
       echo "option: repository=$repository"
       ;;
+    i)
+      libvirt=$OPTARG
+      echo "option: libvirt=libvirt/$libvirt.xml"
+      ;;
     h)
       printf "\n"
       printf "syntax: $0 [options]\n"
@@ -59,13 +63,14 @@ getoptkvm() {
       printf "\t-c <#.cpus>\t\t- number of cpus\n"
       printf "\t-m <mem.GB>\t\t- memory size\n"
       printf "\t-n <vm.name>\t\t- virtual machine name\n"
-      printf "\t-t <yaml.template>\t- default/devel (check ./*.yaml files, default: default.yaml)\n"
+      printf "\t-t <cloudinit>\t\t- default/devel (check cloud-init/*.yaml files)\n"
+      printf "\t-i <libvirt>\t\t- vanilla/numa/... (check libvirt/*.xmlfiles)\n"
       printf "\t-d <ubuntu.codename>\t- xenial/bionic/disco/eoan/focal (default: stable)\n"
       printf "\t-u <username>\t\t- as 1000:1000 in the installed vm (default: ubuntu)\n"
       printf "\t-l <launchpad_id>\t- for the ssh key import (default: rafaeldtinoco)\n"
       printf "\t-p <proxy>\t\t- proxy for http/https/ftp\n"
       printf "\t-r <repo.url>\t\t- url for the ubuntu mirror (default: br.archive)\n"
-      printf ""
+      printf "\n"
       exit 0
       ;;
     \?)

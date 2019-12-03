@@ -7,7 +7,7 @@ checkreq() {
   command=$1
   package=$2
 
-  command -v $command > /dev/null 2>&1 || {
+  command -v $command >> $output 2>&1 || {
     echo "error: package ${package} is not installed"
     exit 1
   }
@@ -18,7 +18,7 @@ checkreq() {
 
 checkcond() {
 
-  $@ || {
+  $@ >> $output 2>&1 || {
     echo "error: could not run $@"
     exit 1
   }
@@ -31,6 +31,15 @@ checkdir() {
 
   [ -d "$1" ] || {
     echo "error: directory $1 should exist"
+    exit 1
+  }
+
+}
+
+checknotdir() {
+
+  [ ! -d "$1" ] || {
+    echo "error: directory $1 shouldn't exist"
     exit 1
   }
 
@@ -54,6 +63,10 @@ exiterr() {
 # run all given cmds inside a chroot
 
 runinjail() {
-  chroot $targetdir /bin/bash -c "$1"
+  chroot $targetdir /bin/bash -c "$1" >> $output 2>&1
+}
+
+teeshush() {
+  tee $@ >> $output 2>&1
 }
 
