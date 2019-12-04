@@ -18,12 +18,11 @@
 #
 
 if [ $UID -ne 0 ]; then
-  sudo "$0" "$@" && exit 0 || exit 1
+  sudo --preserve-env=http_proxy "$0" "$@" && exit 0 || exit 1
 fi
 
 scriptdir=$(dirname $0)
 ubuver=$(ubuntu-distro-info --stable)
-options="-w -c 4 -m 4 -n testme -t default -i vanilla -d $ubuver -u rafaeldtinoco -p $http_proxy"
 
 . $scriptdir/../kvm/functions.sh
 . $scriptdir/../kvm/prereqs.sh
@@ -40,4 +39,25 @@ virsh list --all --name | grep -q testme && {
 
 checknotdir "$pooldir/testme"
 
-$scriptdir/../kvm/kvm.sh $options
+options="-w -c 4 -m 4 -n testme -t default -d $ubuver -u rafaeldtinoco -p $http_proxy"
+
+for file in $scriptdir/../kvm/libvirt/*.xml
+do
+
+  file=$(basename $file)
+  file=${file/\.xml/}
+
+  echo "Do you want to run test with the vm $file ?"
+
+  select yn in "Yes" "No"; do
+    case $yn in
+      Yes)
+        $scriptdir/../kvm/kvm.sh $options "-i $file"
+        break
+        ;;
+      No)
+        break
+        ;;
+    esac
+  done
+done
