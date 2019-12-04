@@ -30,6 +30,15 @@ clean_vfat=0
 
 # arguments
 
+vcpus=""
+ramgb=""
+hostname=""
+cloudinit=""
+username=""
+launchpad_id=""
+proxy=""
+wait=0
+
 usage $@
 
 # proxy
@@ -72,7 +81,7 @@ cd /tmp
 target=$(mktemp -d XXXXXX)   # temporary debootstrap dir
 fattarget=$(mktemp -d XXXXX) # temporary user-data mount dir
 
-cd -
+cd - > /dev/null 2>&1
 
 targetdir="/tmp/$target"
 checkdir $targetdir
@@ -123,7 +132,11 @@ cleanup() {
   rmdir $targetdir
   rmdir $fattargetdir
 
-  echo "attention: logs at $output"
+  checkcond virsh start $hostname
+
+  if [ $wait -ne 0 ]; then
+    waitvm
+  fi
 }
 
 trap cleanup EXIT
@@ -132,29 +145,29 @@ trap cleanup EXIT
 
 [ "$nbdfound" == "" ] && exiterr "error: could not find an available nbd device"
 
-echo "- qcow2 image"
+echo "mark: qcow2 image"
 
 checkcond qemu-img create -f qcow2 $qcow2vol $qcow2size
 clean_qcow2=1
 sync; sync; sync
 
-echo "- nbd connecting qcow2 image"
+echo "mark: nbd connecting qcow2 image"
 
 checkcond qemu-nbd -n -c $nbdavail $qcow2vol
 clean_nbd=1
 
-echo "- disk formatting"
+echo "mark: disk formatting"
 
 printf "n\n\n\n+10MB\n\nn\n\n\n\n\nw\ny\n" | gdisk $nbdavail > /dev/null 2>&1
 sync; sync; sync
 
-echo "- vfat partition"
+echo "mark: vfat partition"
 
 checkcond mkfs.vfat -nCIDATA ${nbdavail}p1
 checkcond mount -t vfat ${nbdavail}p1 $fattargetdir
 clean_vfat=1
 
-echo "- ext4 partition"
+echo "mark: ext4 partition"
 
 mount_opts="noatime,nodiratime,relatime,discard,errors=remount-ro"
 checkcond mkfs.ext4 -LMYROOT ${nbdavail}p2
@@ -163,7 +176,7 @@ clean_mount=1
 
 # start debootstrap
 
-echo "- debootstraping"
+echo "mark: debootstraping"
 
 checkcond debootstrap \
   --components=main,restricted,universe,multiverse \
@@ -172,30 +185,30 @@ checkcond debootstrap \
   $targetdir \
   "$repository"
 
-echo "- mount {procfs,sysfs,devfs}"
+echo "mark: mount {procfs,sysfs,devfs}"
 
 checkcond mount -o bind /proc $targetdir/proc
 checkcond mount -o bind /sys $targetdir/sys
 checkcond mount -o bind /dev $targetdir/dev
 checkcond mount -o bind /dev/pts $targetdir/dev/pts
 
-echo "- setting hostname"
+echo "mark: setting hostname"
 
 echo $hostname | teeshush "$targetdir/etc/hostname"
 
-echo "- adjusting accounts"
+echo "mark: adjusting accounts"
 
 runinjail "echo en_US.UTF-8 > /etc/locale.gen"
 runinjail "locale-gen en_US.UTF-8"
 runinjail "passwd -d root"
 
-echo "- /etc/fstab"
+echo "mark: /etc/fstab"
 
 echo """## /etc/fstab
 LABEL=MYROOT / ext4 noatime,nodiratime,relatime,discard,errors=remount-ro 0 1
 ## end of file""" | teeshush "$targetdir/etc/fstab"
 
-echo "- /etc/network/interfaces"
+echo "mark: /etc/network/interfaces"
 
 echo """## /etc/network/interfaces
 
@@ -207,7 +220,7 @@ iface eth0 inet dhcp
 
 end of file""" | teeshush "$targetdir/etc/network/interfaces"
 
-echo "- /etc/modules"
+echo "mark: /etc/modules"
 
 echo """## /etc/modules
 virtio_balloon
@@ -219,7 +232,7 @@ virtio
 ext4
 ## end of file""" | teeshush "$targetdir/etc/modules"
 
-echo "- /etc/default/grub"
+echo "mark: /etc/default/grub"
 
 echo """## /etc/default/grub
 GRUB_DEFAULT=0
@@ -235,7 +248,7 @@ GRUB_DISABLE_RECOVERY=\"true\"
 GRUB_DISABLE_OS_PROBER=\"true\"
 ## end of file""" | teeshush "$targetdir/etc/default/grub"
 
-echo "- /etc/apt/sources.list"
+echo "mark: /etc/apt/sources.list"
 
 [ $distro_devel -eq 1 ] && distro="focal"
 
@@ -245,7 +258,7 @@ deb $repository $distro-updates main restricted universe multiverse
 deb $repository $distro-proposed main restricted universe multiverse
 ## end of file""" | teeshush "$targetdir/etc/apt/sources.list"
 
-echo "- update and upgrade"
+echo "mark: update and upgrade"
 
 prefix="DEBIAN_FRONTEND=noninteractice"
 
@@ -256,7 +269,7 @@ runinjail "$prefix apt-get install -y grub2 linux-image-generic linux-headers-ge
 runinjail "$prefix apt-get --purge autoremove -y"
 runinjail "$prefix apt-get autoclean"
 
-echo "- grub setup"
+echo "mark: grub setup"
 
 runinjail "echo debconf debconf/priority select low | debconf-set-selections"
 runinjail "echo grub2 grub2/linux_cmdline_default string \"root=/dev/vda2 console=tty0 console=ttyS0,38400n8 apparmor=0 net.ifnames=0 elevator=noop pti=off kpti=off nopcid noibrs noibpb spectre_v2=off nospec_store_bypass_disable l1tf=off\" | debconf-set-selections"
@@ -270,7 +283,7 @@ runinjail "$prefix dpkg-reconfigure grub-pc"
 runinjail "grub-install --force ${nbdavail}"
 runinjail "update-grub"
 
-echo "- creating vm"
+echo "mark: creating vm"
 
 uuid=$(uuidgen)
 
@@ -285,13 +298,13 @@ cat $scriptdir/libvirt/$libvirt.xml | envsubst > /tmp/vm$$.xml
 
 checkcond virsh define /tmp/vm$$.xml
 
-echo "- meta-data and user-data"
+echo "mark: meta-data and user-data"
 
 checkcond cp $scriptdir/cloud-init/$cloudinit.yaml $fattargetdir/user-data
 
 checkcond echo "\"{instance-id: $uuid)}\"" | teeshush "$fattargetdir/meta-data"
 
-echo "- adjust user-data"
+echo "mark: adjust user-data"
 
 proxy=$(echo $proxy | sed 's/\:/\\:/g' | sed 's/\./\\./g')
 repository=$(echo $repository| sed 's/\:/\\:/g' | sed 's/\./\\./g')
@@ -304,7 +317,7 @@ sed -i "s:CHANGE_HTTPS_PROXY:$proxy:g" $fattargetdir/user-data
 sed -i "s:CHANGE_FTP_PROXY:$proxy:g" $fattargetdir/user-data
 sed -i "s:CHANGE_REPOSITORY:$repository:g" $fattargetdir/user-data
 
-echo "- cleaning things up"
+echo "mark: cleaning things up"
 
 clean_mount=1
 clean_vfat=1

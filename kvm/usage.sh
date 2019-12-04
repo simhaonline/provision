@@ -4,16 +4,7 @@
 
 getoptkvm() {
 
-  vcpus=""
-  ramgb=""
-  hostname=""
-  cloudinit=""
-  username=""
-  launchpad_id=""
-  proxy=""
-
-  while getopts ":c:m:n:t:d:p:l:u:r:i:h" opt; do
-    # shellcheck disable=SC2220
+  while getopts ":c:m:n:t:d:p:l:u:r:i:hw" opt; do
     case ${opt} in
     c)
       vcpus=$OPTARG
@@ -36,6 +27,7 @@ getoptkvm() {
       echo "option: distro=$distro"
       ;;
     p)
+      # shellcheck disable=SC2034
       proxy=$OPTARG
       echo "option: proxy=$distro"
       ;;
@@ -55,6 +47,10 @@ getoptkvm() {
       libvirt=$OPTARG
       echo "option: libvirt=libvirt/$libvirt.xml"
       ;;
+    w)
+      wait=1
+      echo "option: wait vm"
+      ;;
     h)
       printf "\n"
       printf "syntax: $0 [options]\n"
@@ -70,6 +66,7 @@ getoptkvm() {
       printf "\t-l <launchpad_id>\t- for the ssh key import (default: rafaeldtinoco)\n"
       printf "\t-p <proxy>\t\t- proxy for http/https/ftp\n"
       printf "\t-r <repo.url>\t\t- url for the ubuntu mirror (default: br.archive)\n"
+      printf "\t-w\t\t\t- wait until cloud-init is finished (after 1st boot)\n"
       printf "\n"
       exit 0
       ;;
@@ -84,14 +81,10 @@ getoptkvm() {
 
   if [[ "$vcpus" == "" || "$ramgb" == "" || "$hostname" == "" ]]
   then
-    echo "$0 -h for help"
-    exit 1
+    exiterr "$0 -h for help"
   fi
 
-  echo -n . ; sleep 1
-  echo -n . ; sleep 1
-  echo -n . ; sleep 1
-  echo ""
+  echo -n . ; sleep 1 ; echo -n . ; sleep 1 ; echo -n . ; sleep 1 ; echo
 }
 
 # usage function
