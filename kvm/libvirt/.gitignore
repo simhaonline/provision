@@ -1,0 +1,5 @@
+*
+!.gitignore
+!numa.xml
+!nvdimm.xml
+!vanilla.xml
