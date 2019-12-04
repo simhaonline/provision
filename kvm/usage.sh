@@ -8,10 +8,16 @@ getoptkvm() {
     case ${opt} in
     c)
       vcpus=$OPTARG
+      _vcpus_max=$(($vcpus-1))
+      _vcpus_half=$(($vcpus/2))
+      _vcpus_half_minus=$((($vcpus/2)-1))
       echo "option: vcpus=$vcpus"
       ;;
     m)
       ramgb=$OPTARG
+      _ramgb_half=$(($ramgb/2))
+      _ramgb_double=$(($ramgb*2))
+      _ramgb_p2=$(($ramgb+2))
       echo "option: ramgb=$ramgb"
       ;;
     n)
@@ -29,7 +35,7 @@ getoptkvm() {
     p)
       # shellcheck disable=SC2034
       proxy=$OPTARG
-      echo "option: proxy=$distro"
+      echo "option: proxy=$proxy"
       ;;
     l)
       launchpad_id=$OPTARG
@@ -78,6 +84,8 @@ getoptkvm() {
   done
 
   shift $((OPTIND - 1))
+
+  # mandatory options
 
   if [[ "$vcpus" == "" || "$ramgb" == "" || "$hostname" == "" ]]
   then

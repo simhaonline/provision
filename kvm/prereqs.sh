@@ -54,6 +54,14 @@ kvmprereqsinst() {
 
 prereqs() {
 
+  # proxy
+
+  if [ "$proxy" != "" ]; then
+    export http_proxy=$proxy
+    export https_proxy=$proxy
+    export ftp_proxy=$proxy
+  fi
+
   output="/tmp/kvm.log"
   echo > $output
   echo "info: logs at $output"

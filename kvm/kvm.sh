@@ -4,7 +4,7 @@
 # feeds user-data cloud-init yaml file into it
 
 if [ $UID -ne 0 ]; then
-  sudo "$0" "$@" && exit 0 || exit 1
+  sudo --preserve-env=http_proxy "$0" "$@" && exit 0 || exit 1
 fi
 
 # directories
@@ -41,19 +41,14 @@ wait=0
 
 usage $@
 
-# proxy
+# defaults (mandatory)
 
-if [ "$proxy" != "" ]; then
-  export http_proxy=$proxy
-  export https_proxy=$proxy
-  export ftp_proxy=$proxy
-fi
+[ "$hostname" == "" ] && exiterr "soething wrong is not right"
+[ "$vcpus" == "" ] && exiterr "something wrong is not right"
+[ "$ramgb" == "" ] && exiterror "something wrong is not right"
 
 # defaults
 
-[ "$hostname" == "" ] && hostname="vmtest123"
-[ "$vcpus" == "" ] && vcpus=2
-[ "$ramgb" == "" ] && ramgb=2
 [ "$cloudinit" == "" ] && cloudinit="default"
 [ "$distro" == "" ] && distro=$(ubuntu-distro-info --stable)
 [ "$launchpad_id" == "" ] && launchpad_id="rafaeldtinoco"
@@ -123,18 +118,17 @@ cleanup() {
     umount $targetdir/proc >/dev/null 2>&1
     umount $targetdir
   }
-  [ $clean_nbd -eq 1 ] && qemu-nbd -d $nbdfound >/dev/null 2>&1
-  sync
+  [ $clean_nbd -eq 1 ] && qemu-nbd -d $nbdfound >/dev/null 2>&1 ; sync
   [ $clean_qcow2 -eq 1 ] && rm $qcow2vol
 
-  rm -f /tmp/vm$$.xml
+  # rm -f /tmp/vm$$.xml
 
   rmdir $targetdir
   rmdir $fattargetdir
 
-  checkcond virsh start $hostname
-
   if [ $wait -ne 0 ]; then
+    echo "mark: waiting cloud-init to complete"
+    checkcond virsh start $hostname
     waitvm
   fi
 }
@@ -293,6 +287,25 @@ export ramgb=$ramgb
 export vcpus=$vcpus
 export qemubin=$qemubin
 export qcow2vol=$qcow2vol
+
+# internal vars
+export _vcpus_max=$_vcpus_max
+export _vcpus_half_minus=$_vcpus_half_minus
+export _vcpus_half=$_vcpus_half
+export _ramgb_half=$_ramgb_half
+export _ramgb_double=$_ramgb_double
+export _ramgb_p2=$_ramgb_p2
+
+# custom - per libvirt - stuff
+
+case $libvirt in
+  nvdimm)
+    export _nvdpath1="/tmp/.nbdpath1.$$" ; truncate -s 1GiB $_nvdpath1;
+    export _nvdpath2="/tmp/.nbdpath2.$$" ; truncate -s 1GiB $_nvdpath2;
+    ;;
+  *)
+    ;;
+esac
 
 cat $scriptdir/libvirt/$libvirt.xml | envsubst > /tmp/vm$$.xml
 
