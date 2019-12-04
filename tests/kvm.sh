@@ -14,6 +14,7 @@
 #         -l <launchpad_id>       - for the ssh key import (default: rafaeldtinoco)
 #         -p <proxy>              - proxy for http/https/ftp
 #         -r <repo.url>           - url for the ubuntu mirror (default: br.archive)
+#         -w                      - wait until cloud-init is finished (after 1st boot)
 #
 
 if [ $UID -ne 0 ]; then
@@ -22,7 +23,7 @@ fi
 
 scriptdir=$(dirname $0)
 ubuver=$(ubuntu-distro-info --stable)
-options="-c 4 -m 4 -n testme -t default -i vanilla -d $ubuver -u rafaeldtinoco -p $http_proxy"
+options="-w -c 4 -m 4 -n testme -t default -i vanilla -d $ubuver -u rafaeldtinoco -p $http_proxy"
 
 . $scriptdir/../kvm/functions.sh
 . $scriptdir/../kvm/prereqs.sh
@@ -34,7 +35,7 @@ pooldir=$(virsh pool-dumpxml default | grep path | sed -E 's:</?path>::g; s:\s+:
 virsh destroy testme > /dev/null 2>&1 ; sleep 1
 
 virsh list --all --name | grep -q testme && {
-  virsh undefine --remove-all-storage testme
+  virsh undefine --remove-all-storage testme > /dev/null 2>&1
 }
 
 checknotdir "$pooldir/testme"
