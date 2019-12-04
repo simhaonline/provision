@@ -12,13 +12,28 @@ exiterr() {
 checkreq() {
   command=$1
   package=$2
-  command -v $command >> $output 2>&1 || exiterr "error: package ${package} is not installed"
+  command -v $command >> $output 2>&1 || exiterr "error: package $package is not installed"
 }
+
+# check for command existence, installing package if needed
+
+checkreqinst() {
+  command -v $1 >> $output 2>&1 || \
+    DEBIAN_FRONTEND=noninteractice apt-get install -y $2
+}
+
+# check for a file existence, installing package if needed
+
+checkfileinst() {
+  [ ! -f "$1" ] && \
+    DEBIAN_FRONTEND=noninteractice apt-get install -y $2
+}
+
 
 # check for a condition (any command) success
 
 checkcond() {
-  $@ >> $output 2>&1 || exiterr "error: could not run $@"
+  $@ >> $output 2>&1 || exiterr "error: could not run $*"
 }
 
 # check directory existence (or not)
@@ -53,3 +68,44 @@ teeshush() {
   tee $@ >> $output 2>&1
 }
 
+# package installation
+
+pkginst() {
+  DEBIAN_FRONTEND=noninteractice apt-get install -y $@ >> $output 2>&1 || \
+    exiterr "error: package $package could not be installed"
+}
+
+# check if pkg exists
+
+checkpkgexists() {
+  apt-cache pkgnames | grep -q $1 || exiterr "error: pkg $1 does not exist"
+}
+
+# check if pkg is isntalled
+
+checkpkg() {
+  dpkg -l $1 > /dev/null 2>&1 || exiterr "error: pkg $1 is not installed"
+}
+
+# wait vm to be available
+
+waitvm() {
+
+  exec 3>/dev/null
+
+  donecmd="cloud-init status | grep -q done"
+
+  time=0; timeout=180;      # 180 seconds waiting for machine
+                            # to be provisioned and have cloud-init
+                            # to finish its duties
+  while true; do
+    ssh $username@$hostname "$donecmd" 1>&3 2>&3 && break || {
+      if [ $time -gt $timeout ]; then
+        exiterr "error: timeout connecting into $hostname"
+      fi
+    }
+    time=$((time+1)) ; sleep 1;
+  done
+
+  exec 3>&-
+}
