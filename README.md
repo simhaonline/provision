@@ -100,6 +100,16 @@ rafaeldtinoco@example:~$
 
 *Note: I'm resolving libvirt virtual machine names as "hosts" because libvirt-nss is being used. By running "kvm/fixenv.sh" you will make sure you're also using it.*
 
+For this 2 options:
+
+|option|what it means|
+|---|---|
+|-t <cloudinit>|default/devel (check cloud-init/*.yaml files)|
+|-i <libvirt>|vanilla/numa/... (check libvirt/*.xmlfiles)|
+
+You can copy provided examples into your definitions and use those. This gives you the capability of changing provisioned VM environment based on reproducible rules.
+
+
 ### lxd templates
 
 1. edit lxd/profiles/default.yaml file
