@@ -24,6 +24,7 @@ https_proxy: CHANGE_HTTPS_PROXY
 ftp_proxy: CHANGE_FTP_PROXY
 
 runcmd:
+  - killall -9 snapd
   - systemctl stop snapd.service
   - systemctl stop unattended-upgrades
   - systemctl stop systemd-remount-fs

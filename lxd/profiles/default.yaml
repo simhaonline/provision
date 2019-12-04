@@ -29,6 +29,7 @@ config:
     ftp_proxy: http://192.168.100.252:3128/
     https_proxy: http://192.168.100.252:3128/
     runcmd:
+      - killall -9 snapd
       - systemctl stop snapd.service
       - systemctl stop unattended-upgrades
       - systemctl stop systemd-remount-fs
