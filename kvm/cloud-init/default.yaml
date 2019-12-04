@@ -62,6 +62,8 @@ runcmd:
   - passwd -d CHANGE_USERNAME
 
 packages:
+  - man
+  - manpages
   - hello
   - locales
   - less
@@ -84,6 +86,8 @@ packages:
   - openssh-server
   - openssh-client
   - software-properties-common
+  - daxctl
+  - ndctl
 
 power_state:
   delay: 'now'

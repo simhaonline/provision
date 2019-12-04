@@ -24,6 +24,7 @@ https_proxy: CHANGE_HTTPS_PROXY
 ftp_proxy: CHANGE_FTP_PROXY
 
 runcmd:
+  - killall -9 snapd
   - systemctl stop snapd.service
   - systemctl stop unattended-upgrades
   - systemctl stop systemd-remount-fs
@@ -61,6 +62,9 @@ runcmd:
   - passwd -d CHANGE_USERNAME
 
 packages:
+  - man
+  - manpages
+  - manpages-dev
   - hello
   - locales
   - less
@@ -86,6 +90,8 @@ packages:
   - build-essential
   - devscripts
   - ubuntu-dev-tools
+  - daxctl
+  - ndctl
 
 power_state:
   delay: 'now'
