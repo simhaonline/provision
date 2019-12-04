@@ -1,7 +1,7 @@
 <domain type='kvm'>
   <name>$hostname</name>
   <uuid>$uuid</uuid>
-  <maxMemory slots='$ramgb' unit='GiB'>$ramgb</maxMemory>
+  <maxMemory slots='$_ramgb_double' unit='GiB'>$_ramgb_double</maxMemory>
   <memory unit='GiB'>$ramgb</memory>
   <currentMemory unit='GiB'>$ramgb</currentMemory>
   <vcpu placement='static'>$vcpus</vcpu>
@@ -21,8 +21,8 @@
     <model fallback='allow'/>
     <topology sockets='$vcpus' cores='1' threads='1'/>
     <numa>
-      <cell id='0' cpus='0-($vcpus/2)' memory='$ramgb/2' unit='GiB'/>
-      <cell id='1' cpus='(($vcpus/2)+1)-$vcpus' memory='$ramgb/2' unit='GiB'/>
+      <cell id='0' cpus='0-$_vcpus_half_minus' memory='$_ramgb_half' unit='GiB'/>
+      <cell id='1' cpus='$_vcpus_half-$_vcpus_max' memory='$_ramgb_half' unit='GiB'/>
     </numa>
   </cpu>
   <!-- clocks and timer -->
