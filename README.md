@@ -100,7 +100,7 @@ rafaeldtinoco@example:~$
 
 *Note: I'm resolving libvirt virtual machine names as "hosts" because libvirt-nss is being used. By running "kvm/fixenv.sh" you will make sure you're also using it.*
 
-For this 2 options:
+For these two options:
 
 |option|what it means|
 |---|---|
