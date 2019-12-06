@@ -69,6 +69,8 @@ packages:
   - locales
   - less
   - vim
+  - jq
+  - uuid
   - bash-completion
   - sudo
   - rsync
@@ -90,8 +92,6 @@ packages:
   - build-essential
   - devscripts
   - ubuntu-dev-tools
-  - daxctl
-  - ndctl
 
 power_state:
   delay: 'now'

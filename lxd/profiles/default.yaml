@@ -66,14 +66,20 @@ config:
       - systemctl disable lvm2-lvmpolld.socket
       - systemctl disable lvm2-lvmetad.socket
     packages:
+      - man
+      - manpages
       - hello
       - locales
       - less
       - vim
+      - jq
+      - uuid
+      - bash-completion
+      - sudo
       - rsync
       - bridge-utils
-      - vlan
       - net-tools
+      - vlan
       - ncurses-term
       - iputils-arping
       - iputils-ping
@@ -82,6 +88,10 @@ config:
       - mtr-tiny
       - tcpdump
       - dnsutils
+      - ssh-import-id
+      - openssh-server
+      - openssh-client
+      - software-properties-common
     power_state:
       delay: 'now'
       mode: reboot

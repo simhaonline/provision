@@ -56,10 +56,9 @@ usage $@
 [ "$repository" == "" ] && repository="http://br.archive.ubuntu.com/ubuntu"
 
 distro_devel=0
-if [ "$distro" == "focal" ]
-then
-    distro_devel=1
-    distro="eoan"
+if [ "$distro" == "focal" ]; then
+  distro_devel=1
+  distro="eoan"
 fi
 
 # environmetal
@@ -76,7 +75,7 @@ cd /tmp
 target=$(mktemp -d XXXXXX)   # temporary debootstrap dir
 fattarget=$(mktemp -d XXXXX) # temporary user-data mount dir
 
-cd - > /dev/null 2>&1
+cd - >/dev/null 2>&1
 
 targetdir="/tmp/$target"
 checkdir $targetdir
@@ -110,7 +109,7 @@ cleanup() {
 
   echo "finish: cleaning up leftovers"
 
-  [ $clean_vfat -eq 1 ] && umount $fattargetdir
+  [ $clean_vfat -eq 1 ] && umount $fattargetdir >/dev/null 2>&1
   [ $clean_mount -eq 1 ] && {
     umount $targetdir/dev/pts >/dev/null 2>&1
     umount $targetdir/dev >/dev/null 2>&1
@@ -118,8 +117,10 @@ cleanup() {
     umount $targetdir/proc >/dev/null 2>&1
     umount $targetdir
   }
-  [ $clean_nbd -eq 1 ] && qemu-nbd -d $nbdfound >/dev/null 2>&1 ; sync
-  [ $clean_qcow2 -eq 1 ] && rm $qcow2vol
+  [ $clean_nbd -eq 1 ] && qemu-nbd -d $nbdfound >/dev/null 2>&1 ; sync ; sync ; sync
+  [ $clean_qcow2 -eq 1 ] && {
+    virsh vol-delete --pool default $(basename $qcow2vol) >/dev/null 2>&1
+  }
 
   # rm -f /tmp/vm$$.xml
 
@@ -141,9 +142,12 @@ trap cleanup EXIT
 
 echo "mark: qcow2 image"
 
-checkcond qemu-img create -f qcow2 $qcow2vol $qcow2size
+checkcond virsh vol-create-as default $(basename $qcow2vol) $qcow2size --format qcow2
+
 clean_qcow2=1
-sync; sync; sync
+sync
+sync
+sync
 
 echo "mark: nbd connecting qcow2 image"
 
@@ -152,8 +156,10 @@ clean_nbd=1
 
 echo "mark: disk formatting"
 
-printf "n\n\n\n+10MB\n\nn\n\n\n\n\nw\ny\n" | gdisk $nbdavail > /dev/null 2>&1
-sync; sync; sync
+printf "n\n\n\n+10MB\n\nn\n\n\n\n\nw\ny\n" | gdisk $nbdavail >/dev/null 2>&1
+sync
+sync
+sync
 
 echo "mark: vfat partition"
 
@@ -296,18 +302,21 @@ export _ramgb_half=$_ramgb_half
 export _ramgb_double=$_ramgb_double
 export _ramgb_p2=$_ramgb_p2
 
-# custom - per libvirt - stuff
+# custom - per libvirt: special cases
 
 case $libvirt in
-  nvdimm)
-    export _nvdpath1="/tmp/.nbdpath1.$$" ; truncate -s 1GiB $_nvdpath1;
-    export _nvdpath2="/tmp/.nbdpath2.$$" ; truncate -s 1GiB $_nvdpath2;
-    ;;
-  *)
-    ;;
+
+nvdimm)
+  # create backing files for emulated nvdimms
+  export _nvpath1="/tmp/.nvpath1.$$"
+  checkcond dd if=/dev/zero of="$_nvpath1" bs=$((1024*1024)) count=$((1024+256))
+  ;;
+
+*) ;;
+
 esac
 
-cat $scriptdir/libvirt/$libvirt.xml | envsubst > /tmp/vm$$.xml
+cat $scriptdir/libvirt/$libvirt.xml | envsubst >/tmp/vm$$.xml
 
 checkcond virsh define /tmp/vm$$.xml
 
@@ -320,7 +329,7 @@ checkcond echo "\"{instance-id: $uuid)}\"" | teeshush "$fattargetdir/meta-data"
 echo "mark: adjust user-data"
 
 proxy=$(echo $proxy | sed 's/\:/\\:/g' | sed 's/\./\\./g')
-repository=$(echo $repository| sed 's/\:/\\:/g' | sed 's/\./\\./g')
+repository=$(echo $repository | sed 's/\:/\\:/g' | sed 's/\./\\./g')
 
 sed -i "s:CHANGE_USERNAME:$username:g" $fattargetdir/user-data
 sed -i "s:CHANGE_LAUNCHPAD_ID:$launchpad_id:g" $fattargetdir/user-data

@@ -95,7 +95,7 @@ waitvm() {
 
   donecmd="cloud-init status | grep -q done"
 
-  time=0; timeout=180;      # 180 seconds waiting for machine
+  time=0; timeout=300;      # 300 seconds waiting for machine
                             # to be provisioned and have cloud-init
                             # to finish its duties
   while true; do
