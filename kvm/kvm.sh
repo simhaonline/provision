@@ -205,7 +205,14 @@ runinjail "passwd -d root"
 echo "mark: /etc/fstab"
 
 echo """## /etc/fstab
+
 LABEL=MYROOT / ext4 noatime,nodiratime,relatime,discard,errors=remount-ro 0 1
+
+# p9filesystem (check kvm/libvirt/extras/p9filesystem/p9-{root,home}.xml
+
+# root /root 9p rw,noatime,nodiratime,relatime,sync,dirsync,cache=fscache,trans=virtio,noauto,x-systemd.automount,version=9p2000.L,msize=262144,access=client,posixacl 0 0
+# home /home 9p rw,noatime,nodiratime,relatime,sync,dirsync,cache=fscache,trans=virtio,noauto,x-systemd.automount,version=9p2000.L,msize=262144,access=client,posixacl 0 0
+
 ## end of file""" | teeshush "$targetdir/etc/fstab"
 
 echo "mark: /etc/network/interfaces"
@@ -230,6 +237,9 @@ virtio_pci
 virtio_ring
 virtio
 ext4
+9p
+9pnet
+9pnet_virtio
 ## end of file""" | teeshush "$targetdir/etc/modules"
 
 echo "mark: /etc/default/grub"
@@ -309,7 +319,9 @@ case $libvirt in
 nvdimm)
   # create backing files for emulated nvdimms
   export _nvpath1="/tmp/.nvpath1.$$"
-  checkcond dd if=/dev/zero of="$_nvpath1" bs=$((1024*1024)) count=$((1024+256))
+  export _nvpath2="/tmp/.nvpath2.$$"
+  checkcond dd if=/dev/zero of="$_nvpath1" bs=1M count=2050
+  checkcond dd if=/dev/zero of="$_nvpath2" bs=1M count=2050
   ;;
 
 *) ;;

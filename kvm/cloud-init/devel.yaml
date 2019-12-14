@@ -178,6 +178,9 @@ write_files:
       virtio_ring
       virtio
       ext4
+      9p
+      9pnet
+      9pnet_virtio
 
   - path: /etc/initramfs-tools/modules
     content: |
@@ -188,6 +191,9 @@ write_files:
       virtio_ring
       virtio
       ext4
+      9p
+      9pnet
+      9pnet_virtio
 
 apt:
   preserve_sources_list: false
