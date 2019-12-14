@@ -24,10 +24,10 @@ config:
         name: eth0
         subnets:
           - type: dhcp
-    proxy: http://192.168.100.252:3128/
-    http_proxy: http://192.168.100.252:3128/
-    ftp_proxy: http://192.168.100.252:3128/
-    https_proxy: http://192.168.100.252:3128/
+    proxy: http://192.168.100.250:3142/
+    http_proxy: http://192.168.100.250:3142/
+    ftp_proxy: http://192.168.100.250:3142/
+    https_proxy: http://192.168.100.250:3142/
     runcmd:
       - systemctl stop snapd.service
       - systemctl stop unattended-upgrades
@@ -177,7 +177,7 @@ config:
         # deb-src $MIRROR $RELEASE-backports main restricted universe multiverse
         deb-src $SECURITY $RELEASE-security universe multiverse
       conf: |
-        Acquire::http::Proxy "http://192.168.100.252:3128/";
+        Acquire::http::Proxy "http://192.168.100.250:3142/";
         Dpkg::Options {
           "--force-confdef";
           "--force-confold";
