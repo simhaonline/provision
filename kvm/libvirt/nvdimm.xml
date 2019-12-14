@@ -76,13 +76,27 @@
         <path>$_nvpath1</path>
       </source>
       <target>
-        <size unit='B'>1073741824</size>
+        <size unit='KiB'>1048576</size>
         <node>0</node>
         <label>
-          <size unit='KiB'>256</size>
+          <size unit='KiB'>2048</size>
         </label>
       </target>
       <address type='dimm' slot='0'/>
+    </memory>
+    <!-- nvdimm node 1 -->
+    <memory model='nvdimm' access='shared'>
+      <source>
+        <path>$_nvpath2</path>
+      </source>
+      <target>
+        <size unit='KiB'>1048576</size>
+        <node>1</node>
+        <label>
+          <size unit='KiB'>2048</size>
+        </label>
+      </target>
+      <address type='dimm' slot='1'/>
     </memory>
   </devices>
 </domain>
