@@ -29,7 +29,6 @@ config:
     ftp_proxy: http://192.168.100.250:3142/
     https_proxy: http://192.168.100.250:3142/
     runcmd:
-      - killall -9 snapd
       - systemctl stop snapd.service
       - systemctl stop unattended-upgrades
       - systemctl stop systemd-remount-fs
@@ -92,6 +91,14 @@ config:
       - openssh-server
       - openssh-client
       - software-properties-common
+      - build-essential
+      - devscripts
+      - ubuntu-dev-tools
+      - linux-headers-generic
+      - gdb
+      - strace
+      - ltrace
+      - lsof
     power_state:
       delay: 'now'
       mode: reboot
@@ -183,7 +190,7 @@ config:
             # deb http://ddebs.ubuntu.com $RELEASE-updates main restricted universe multiverse
             # deb http://ddebs.ubuntu.com $RELEASE-proposed main restricted universe multiverse
           keyid: C8CAB6595FDFF622
-description: Default LXD profile
+description: default
 devices:
   eth0:
     name: eth0
@@ -208,7 +215,7 @@ devices:
     type: disk
   root:
     path: /
-    pool: lxd
+    pool: default
     type: disk
   rootdir:
     path: /root
