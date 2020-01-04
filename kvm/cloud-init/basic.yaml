@@ -64,7 +64,6 @@ runcmd:
 packages:
   - man
   - manpages
-  - manpages-dev
   - hello
   - locales
   - less
@@ -89,9 +88,6 @@ packages:
   - openssh-server
   - openssh-client
   - software-properties-common
-  - build-essential
-  - devscripts
-  - ubuntu-dev-tools
 
 power_state:
   delay: 'now'
@@ -223,7 +219,7 @@ apt:
     debug.list:
       source: |
         # debug symbols
-        deb http://ddebs.ubuntu.com $RELEASE main restricted universe multiverse
-        deb http://ddebs.ubuntu.com $RELEASE-updates main restricted universe multiverse
-        deb http://ddebs.ubuntu.com $RELEASE-proposed main restricted universe multiverse
+        # deb http://ddebs.ubuntu.com $RELEASE main restricted universe multiverse
+        # deb http://ddebs.ubuntu.com $RELEASE-updates main restricted universe multiverse
+        # deb http://ddebs.ubuntu.com $RELEASE-proposed main restricted universe multiverse
       keyid: C8CAB6595FDFF622
