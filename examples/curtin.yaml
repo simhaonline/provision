@@ -4,7 +4,7 @@ apt:
   preserve_sources_list: false
   primary:
     - arches: [default]
-      uri: http://br.archive.ubuntu.com/ubuntu
+      uri: http://us.archive.ubuntu.com/ubuntu
   security:
     - arches: [default]
       uri: http://security.ubuntu.com/ubuntu

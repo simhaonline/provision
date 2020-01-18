@@ -71,7 +71,7 @@ getoptkvm() {
       printf "\t-u <username>\t\t- as 1000:1000 in the installed vm (default: ubuntu)\n"
       printf "\t-l <launchpad_id>\t- for the ssh key import (default: rafaeldtinoco)\n"
       printf "\t-p <proxy>\t\t- proxy for http/https/ftp\n"
-      printf "\t-r <repo.url>\t\t- url for the ubuntu mirror (default: br.archive)\n"
+      printf "\t-r <repo.url>\t\t- url for the ubuntu mirror (default: us.archive)\n"
       printf "\t-w\t\t\t- wait until cloud-init is finished (after 1st boot)\n"
       printf "\n"
       exit 0

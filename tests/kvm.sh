@@ -13,7 +13,7 @@
 #         -u <username>           - as 1000:1000 in the installed vm (default: ubuntu)
 #         -l <launchpad_id>       - for the ssh key import (default: rafaeldtinoco)
 #         -p <proxy>              - proxy for http/https/ftp
-#         -r <repo.url>           - url for the ubuntu mirror (default: br.archive)
+#         -r <repo.url>           - url for the ubuntu mirror (default: us.archive)
 #         -w                      - wait until cloud-init is finished (after 1st boot)
 #
 

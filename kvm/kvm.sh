@@ -53,7 +53,7 @@ usage $@
 [ "$distro" == "" ] && distro=$(ubuntu-distro-info --stable)
 [ "$launchpad_id" == "" ] && launchpad_id="rafaeldtinoco"
 [ "$username" == "" ] && username="ubuntu"
-[ "$repository" == "" ] && repository="http://br.archive.ubuntu.com/ubuntu"
+[ "$repository" == "" ] && repository="http://us.archive.ubuntu.com/ubuntu"
 
 distro_devel=0
 if [ "$distro" == "focal" ]; then
