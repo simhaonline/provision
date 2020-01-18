@@ -29,7 +29,6 @@ config:
     ftp_proxy: http://192.168.100.250:3142/
     https_proxy: http://192.168.100.250:3142/
     runcmd:
-      - killall -9 snapd
       - systemctl stop snapd.service
       - systemctl stop unattended-upgrades
       - systemctl stop systemd-remount-fs
@@ -92,6 +91,14 @@ config:
       - openssh-server
       - openssh-client
       - software-properties-common
+      - build-essential
+      - devscripts
+      - ubuntu-dev-tools
+      - linux-headers-generic
+      - gdb
+      - strace
+      - ltrace
+      - lsof
     power_state:
       delay: 'now'
       mode: reboot
@@ -183,12 +190,32 @@ config:
             # deb http://ddebs.ubuntu.com $RELEASE-updates main restricted universe multiverse
             # deb http://ddebs.ubuntu.com $RELEASE-proposed main restricted universe multiverse
           keyid: C8CAB6595FDFF622
-description: basic
+description: cluster
 devices:
   eth0:
     name: eth0
     nictype: bridged
     parent: virbr0
+    type: nic
+  iscsi01:
+    name: iscsi01
+    nictype: bridged
+    parent: iscsi01
+    type: nic
+  iscsi02:
+    name: iscsi02
+    nictype: bridged
+    parent: iscsi02
+    type: nic
+  private01:
+    name: private01
+    nictype: bridged
+    parent: private01
+    type: nic
+  private02:
+    name: private02
+    nictype: bridged
+    parent: private02
     type: nic
   iconsdir:
     path: /usr/share/icons
@@ -218,6 +245,6 @@ devices:
     path: /root
     source: /root
     type: disk
-name: basic
+name: cluster
 used_by: []
 

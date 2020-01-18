@@ -159,7 +159,7 @@ config:
       preserve_sources_list: false
       primary:
         - arches: [default]
-          uri: http://br.archive.ubuntu.com/ubuntu
+          uri: http://us.archive.ubuntu.com/ubuntu
       security:
         - arches: [default]
           uri: http://security.ubuntu.com/ubuntu
@@ -197,10 +197,6 @@ devices:
     nictype: bridged
     parent: virbr0
     type: nic
-  fontsdir:
-    path: /usr/share/fonts
-    source: /usr/share/fonts
-    type: disk
   iconsdir:
     path: /usr/share/icons
     source: /usr/share/icons
@@ -208,6 +204,14 @@ devices:
   themesdir:
     path: /usr/share/themes
     source: /usr/share/themes
+    type: disk
+  fontsdir:
+    path: /usr/share/fonts
+    source: /usr/share/fonts
+    type: disk
+  optdir:
+    path: /opt
+    source: /opt
     type: disk
   homedir:
     path: /home
