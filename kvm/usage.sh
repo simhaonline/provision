@@ -4,7 +4,7 @@
 
 getoptkvm() {
 
-  while getopts ":c:m:n:t:d:p:l:u:r:i:hw" opt; do
+  while getopts ":c:m:n:t:d:p:l:u:r:i:o:kqhw" opt; do
     case ${opt} in
     c)
       vcpus=$OPTARG
@@ -57,6 +57,18 @@ getoptkvm() {
       wait=1
       echo "option: wait vm"
       ;;
+    o)
+      cdromvol=$OPTARG
+      echo "option: cdromvol=$cdromvol"
+      ;;
+    k)
+      noinstall=1
+      echo "option: noinstall"
+      ;;
+    q)
+      noqcow2create=1
+      echo "option: noqcow2create"
+      ;;
     h)
       printf "\n"
       printf "syntax: $0 [options]\n"
@@ -72,6 +84,9 @@ getoptkvm() {
       printf "\t-l <launchpad_id>\t- for the ssh key import (default: rafaeldtinoco)\n"
       printf "\t-p <proxy>\t\t- proxy for http/https/ftp\n"
       printf "\t-r <repo.url>\t\t- url for the ubuntu mirror (default: us.archive)\n"
+      printf "\t-o <isofile>\t\t- file containing iso image to be used as cdrom\n"
+      printf "\t-k\t\t\t- do not attempt to install anything (livecd cases)\n"
+      printf "\t-q\t\t\t- do not attempt to create qcow2 volumes (livecd cases)\n"
       printf "\t-w\t\t\t- wait until cloud-init is finished (after 1st boot)\n"
       printf "\n"
       exit 0

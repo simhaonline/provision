@@ -3,7 +3,8 @@
 # bootstraps a qcow2 image using debootstrap
 # feeds user-data cloud-init yaml file into it
 
-if [ $UID -ne 0 ]; then
+if [ $UID -ne 0 ];
+then
   sudo --preserve-env=http_proxy "$0" "$@" && exit 0 || exit 1
 fi
 
@@ -38,12 +39,15 @@ username=""
 launchpad_id=""
 proxy=""
 wait=0
+cdromvol=""
+noinstall=0
+noqcow2create=0
 
 usage $@
 
 # defaults (mandatory)
 
-[ "$hostname" == "" ] && exiterr "soething wrong is not right"
+[ "$hostname" == "" ] && exiterr "something wrong is not right"
 [ "$vcpus" == "" ] && exiterr "something wrong is not right"
 [ "$ramgb" == "" ] && exiterror "something wrong is not right"
 
@@ -54,9 +58,11 @@ usage $@
 [ "$launchpad_id" == "" ] && launchpad_id="rafaeldtinoco"
 [ "$username" == "" ] && username="ubuntu"
 [ "$repository" == "" ] && repository="http://us.archive.ubuntu.com/ubuntu"
+[ "$cdromvol" != "" ] && [ ! -f "$cdromvol" ] && exiterr "cdrom image does not exist"
 
 distro_devel=0
-if [ "$distro" == "focal" ]; then
+if [ "$distro" == "focal" ];
+then
   distro_devel=1
   distro="eoan"
 fi
@@ -68,66 +74,89 @@ pooldir=$(virsh pool-dumpxml default | grep path | sed -E 's:</?path>::g; s:\s+:
 qemubin=$(which qemu-system-x86_64)
 newmac=$(printf '52:54:00:%02X:%02X:%02X\n' $((RANDOM % 256)) $((RANDOM % 256)) $((RANDOM % 256)))
 
-# temp dirs
+do_tempdirs() {
 
-cd /tmp
+  # temp dirs
 
-target=$(mktemp -d XXXXXX)   # temporary debootstrap dir
-fattarget=$(mktemp -d XXXXX) # temporary user-data mount dir
+  cd /tmp
 
-cd - >/dev/null 2>&1
+  target=$(mktemp -d XXXXXX)   # temporary debootstrap dir
+  fattarget=$(mktemp -d XXXXX) # temporary user-data mount dir
 
-targetdir="/tmp/$target"
-checkdir $targetdir
+  cd - >/dev/null 2>&1
 
-fattargetdir="/tmp/$fattarget"
-checkdir $fattargetdir
+  targetdir="/tmp/$target"
+  checkdir $targetdir
 
-# find next available nbd device
+  fattargetdir="/tmp/$fattarget"
+  checkdir $fattargetdir
 
-nbdfound=""
-for nbdavail in /dev/nbd*; do
-  lsblk | grep -q "$nbdavail " || {
-    nbdfound=$nbdavail
-    break
-  }
-done
+  # find next available nbd device
 
-# check qcow2 existence
+  nbdfound=""
+  for nbdavail in /dev/nbd*; do
+    lsblk | grep -q "$nbdavail " || {
+      nbdfound=$nbdavail
+      break
+    }
+  done
 
-qcow2vol="$pooldir/$hostname-disk01.qcow2"
-qcow2size=30G
-checknotfile $qcow2vol
+}
 
-# extra packages to install during debootstrap phase
+[ $noinstall -eq 0 ] && do_tempdirs
 
-packages="locales,ifupdown"
+do_checkqcow2() {
 
-# cleanup loopback device and mounted dirs when exiting
+  # check qcow2 existence
+
+  qcow2vol="$pooldir/$hostname-disk01.qcow2"
+  qcow2size=30G
+  checknotfile $qcow2vol
+}
+
+
+[ $noqcow2create -eq 0 ] && do_checkqcow2
 
 cleanup() {
 
+  # cleanup loopback device and mounted dirs when exiting
+
   echo "finish: cleaning up leftovers"
 
-  [ $clean_vfat -eq 1 ] && umount $fattargetdir >/dev/null 2>&1
-  [ $clean_mount -eq 1 ] && {
-    umount $targetdir/dev/pts >/dev/null 2>&1
-    umount $targetdir/dev >/dev/null 2>&1
-    umount $targetdir/sys >/dev/null 2>&1
-    umount $targetdir/proc >/dev/null 2>&1
-    umount $targetdir
-  }
-  [ $clean_nbd -eq 1 ] && qemu-nbd -d $nbdfound >/dev/null 2>&1 ; sync ; sync ; sync
-  [ $clean_qcow2 -eq 1 ] && {
+  if [ $noinstall -eq 0 ];
+  then
+    [ $clean_vfat -eq 1 ] && umount $fattargetdir >/dev/null 2>&1
+    [ $clean_mount -eq 1 ] && {
+      umount $targetdir/dev/pts >/dev/null 2>&1
+      umount $targetdir/dev >/dev/null 2>&1
+      umount $targetdir/sys >/dev/null 2>&1
+      umount $targetdir/proc >/dev/null 2>&1
+      umount $targetdir
+    }
+  fi
+
+  if [ $clean_nbd -eq 1 ];
+  then
+    qemu-nbd -d $nbdfound >/dev/null 2>&1
+  fi
+
+  sync ; sync ; sync
+
+  if [ $clean_qcow2 -eq 1 ];
+  then
     virsh vol-delete --pool default $(basename $qcow2vol) >/dev/null 2>&1
-  }
+  fi
 
   # rm -f /tmp/vm$$.xml
 
-  rmdir $targetdir
-  rmdir $fattargetdir
+  if [ $noinstall -eq 0 ];
+  then
+    rmdir $targetdir
+    rmdir $fattargetdir
+  fi
 
-  if [ $wait -ne 0 ]; then
+  if [ $wait -ne 0 ];
+  then
     echo "mark: waiting cloud-init to complete"
     checkcond virsh start $hostname
     waitvm
@@ -136,75 +165,87 @@ cleanup() {
 
 trap cleanup EXIT
 
-# some initial prereqs
+do_qcow2creation() {
 
-[ "$nbdfound" == "" ] && exiterr "error: could not find an available nbd device"
+  echo "mark: qcow2 image"
 
-echo "mark: qcow2 image"
+  checkcond virsh vol-create-as default $(basename $qcow2vol) $qcow2size --format qcow2
+  clean_qcow2=1
 
-checkcond virsh vol-create-as default $(basename $qcow2vol) $qcow2size --format qcow2
+  sync ; sync ; sync
+}
 
-clean_qcow2=1
-sync
-sync
-sync
+[ $noqcow2create -eq 0 ] && do_qcow2creation
 
-echo "mark: nbd connecting qcow2 image"
+do_initialprereqs() {
 
-checkcond qemu-nbd -n -c $nbdavail $qcow2vol
-clean_nbd=1
+  [ "$nbdfound" == "" ] && exiterr "error: could not find an available nbd device"
 
-echo "mark: disk formatting"
+  echo "mark: nbd connecting qcow2 image"
 
-printf "n\n\n\n+10MB\n\nn\n\n\n\n\nw\ny\n" | gdisk $nbdavail >/dev/null 2>&1
-sync
-sync
-sync
+  checkcond qemu-nbd -n -c $nbdavail $qcow2vol
+  clean_nbd=1
 
-echo "mark: vfat partition"
+  echo "mark: disk formatting"
 
-checkcond mkfs.vfat -nCIDATA ${nbdavail}p1
-checkcond mount -t vfat ${nbdavail}p1 $fattargetdir
-clean_vfat=1
+  printf "n\n\n\n+10MB\n\nn\n\n\n\n\nw\ny\n" | gdisk $nbdavail >/dev/null 2>&1
 
-echo "mark: ext4 partition"
+  sync ; sync ; sync
 
-mount_opts="noatime,nodiratime,relatime,discard,errors=remount-ro"
-checkcond mkfs.ext4 -LMYROOT ${nbdavail}p2
-checkcond mount -o $mount_opts ${nbdavail}p2 $targetdir
-clean_mount=1
+  echo "mark: vfat partition"
 
-# start debootstrap
+  checkcond mkfs.vfat -nCIDATA ${nbdavail}p1
+  checkcond mount -t vfat ${nbdavail}p1 $fattargetdir
+  clean_vfat=1
 
-echo "mark: debootstraping"
+  echo "mark: ext4 partition"
 
-checkcond debootstrap \
-  --components=main,restricted,universe,multiverse \
-  --include="$packages" \
-  $distro \
-  $targetdir \
-  "$repository"
+  mount_opts="noatime,nodiratime,relatime,discard,errors=remount-ro"
+  checkcond mkfs.ext4 -LMYROOT ${nbdavail}p2
+  checkcond mount -o $mount_opts ${nbdavail}p2 $targetdir
+  clean_mount=1
 
-echo "mark: mount {procfs,sysfs,devfs}"
+}
 
-checkcond mount -o bind /proc $targetdir/proc
-checkcond mount -o bind /sys $targetdir/sys
-checkcond mount -o bind /dev $targetdir/dev
-checkcond mount -o bind /dev/pts $targetdir/dev/pts
+[ $noinstall -eq 0 ] && do_initialprereqs
 
-echo "mark: setting hostname"
+do_debootstrap() {
 
-echo $hostname | teeshush "$targetdir/etc/hostname"
+  # extra packages to install during debootstrap phase
 
-echo "mark: adjusting accounts"
+  packages="locales,ifupdown"
 
-runinjail "echo en_US.UTF-8 > /etc/locale.gen"
-runinjail "locale-gen en_US.UTF-8"
-runinjail "passwd -d root"
+  # start debootstrap
 
-echo "mark: /etc/fstab"
+  echo "mark: debootstraping"
 
-echo """## /etc/fstab
+  checkcond debootstrap \
+    --components=main,restricted,universe,multiverse \
+    --include="$packages" \
+    $distro \
+    $targetdir \
+    "$repository"
+
+  echo "mark: mount {procfs,sysfs,devfs}"
+
+  checkcond mount -o bind /proc $targetdir/proc
+  checkcond mount -o bind /sys $targetdir/sys
+  checkcond mount -o bind /dev $targetdir/dev
+  checkcond mount -o bind /dev/pts $targetdir/dev/pts
+
+  echo "mark: setting hostname"
+
+  echo $hostname | teeshush "$targetdir/etc/hostname"
+
+  echo "mark: adjusting accounts"
+
+  runinjail "echo en_US.UTF-8 > /etc/locale.gen"
+  runinjail "locale-gen en_US.UTF-8"
+  runinjail "passwd -d root"
+
+  echo "mark: /etc/fstab"
+
+  echo """## /etc/fstab
 
 LABEL=MYROOT / ext4 noatime,nodiratime,relatime,discard,errors=remount-ro 0 1
 
@@ -215,9 +256,9 @@ LABEL=MYROOT / ext4 noatime,nodiratime,relatime,discard,errors=remount-ro 0 1
 
 ## end of file""" | teeshush "$targetdir/etc/fstab"
 
-echo "mark: /etc/network/interfaces"
+  echo "mark: /etc/network/interfaces"
 
-echo """## /etc/network/interfaces
+  echo """## /etc/network/interfaces
 
 auto lo
 iface lo inet loopback
@@ -227,9 +268,9 @@ iface eth0 inet dhcp
 
 end of file""" | teeshush "$targetdir/etc/network/interfaces"
 
-echo "mark: /etc/modules"
+  echo "mark: /etc/modules"
 
-echo """## /etc/modules
+  echo """## /etc/modules
 virtio_balloon
 virtio_blk
 virtio_net
@@ -242,14 +283,14 @@ ext4
 9pnet_virtio
 ## end of file""" | teeshush "$targetdir/etc/modules"
 
-echo "mark: /etc/default/grub"
+  echo "mark: /etc/default/grub"
 
-echo """## /etc/default/grub
+  echo """## /etc/default/grub
 GRUB_DEFAULT=0
 GRUB_HIDDEN_TIMEOUT_QUIET=true
 GRUB_TIMEOUT=2
 GRUB_DISTRIBUTOR=$(lsb_release -i -s 2>/dev/null || echo Debian)
-GRUB_CMDLINE_LINUX_DEFAULT="\"root=/dev/vda2 console=tty0 console=ttyS0,38400n8 apparmor=0 net.ifnames=0 elevator=noop pti=off kpti=off nopcid noibrs noibpb spectre_v2=off nospec_store_bypass_disable l1tf=off\""
+GRUB_CMDLINE_LINUX_DEFAULT="\"root=/dev/vda2 console=tty0 console=ttyS0,38400n8 apparmor=0 net.ifnames=0 elevator=noop\""
 GRUB_CMDLINE_LINUX=\"\"
 GRUB_TERMINAL=serial
 GRUB_SERIAL_COMMAND=\"serial --speed=115200 --unit=0 --word=8 --parity=no --stop=1\"
@@ -258,51 +299,59 @@ GRUB_DISABLE_RECOVERY=\"true\"
 GRUB_DISABLE_OS_PROBER=\"true\"
 ## end of file""" | teeshush "$targetdir/etc/default/grub"
 
-echo "mark: /etc/apt/sources.list"
+  echo "mark: /etc/apt/sources.list"
 
-[ $distro_devel -eq 1 ] && distro="focal"
+  [ $distro_devel -eq 1 ] && distro="focal"
 
-echo """## /etc/apt/sources.list
+  echo """## /etc/apt/sources.list
 deb $repository $distro main restricted universe multiverse
 deb $repository $distro-updates main restricted universe multiverse
 deb $repository $distro-proposed main restricted universe multiverse
 ## end of file""" | teeshush "$targetdir/etc/apt/sources.list"
 
-echo "mark: update and upgrade"
+  echo "mark: update and upgrade"
 
-prefix="DEBIAN_FRONTEND=noninteractice"
+  prefix="DEBIAN_FRONTEND=noninteractice"
 
-runinjail "$prefix apt-get update"
-runinjail "$prefix apt-get dist-upgrade -y"
-runinjail "$prefix apt-get install -y cloud-init"
-runinjail "$prefix apt-get install -y grub2 linux-image-generic linux-headers-generic"
-runinjail "$prefix apt-get --purge autoremove -y"
-runinjail "$prefix apt-get autoclean"
+  runinjail "$prefix apt-get update"
+  runinjail "$prefix apt-get dist-upgrade -y"
+  runinjail "$prefix apt-get install -y cloud-init"
+  runinjail "$prefix apt-get install -y grub2 linux-image-generic linux-headers-generic"
+  runinjail "$prefix apt-get --purge autoremove -y"
+  runinjail "$prefix apt-get autoclean"
 
-echo "mark: grub setup"
+  echo "mark: grub setup"
 
-runinjail "echo debconf debconf/priority select low | debconf-set-selections"
-runinjail "echo grub2 grub2/linux_cmdline_default string \"root=/dev/vda2 console=tty0 console=ttyS0,38400n8 apparmor=0 net.ifnames=0 elevator=noop pti=off kpti=off nopcid noibrs noibpb spectre_v2=off nospec_store_bypass_disable l1tf=off\" | debconf-set-selections"
-runinjail "echo grub2 grub2/linux_cmdline string | debconf-set-selections"
-runinjail "echo grub-pc grub-pc/install_devices string /dev/vda | debconf-set-selections"
+  runinjail "echo debconf debconf/priority select low | debconf-set-selections"
+  runinjail "echo grub2 grub2/linux_cmdline_default string \"root=/dev/vda2 console=tty0 console=ttyS0,38400n8 apparmor=0 net.ifnames=0 elevator=noop pti=off kpti=off nopcid noibrs noibpb spectre_v2=off nospec_store_bypass_disable l1tf=off\" | debconf-set-selections"
+  runinjail "echo grub2 grub2/linux_cmdline string | debconf-set-selections"
+  runinjail "echo grub-pc grub-pc/install_devices string /dev/vda | debconf-set-selections"
 
-runinjail "$prefix dpkg-reconfigure debconf"
-runinjail "$prefix dpkg-reconfigure grub2"
-runinjail "$prefix dpkg-reconfigure grub-pc"
+  runinjail "$prefix dpkg-reconfigure debconf"
+  runinjail "$prefix dpkg-reconfigure grub2"
+  runinjail "$prefix dpkg-reconfigure grub-pc"
 
-runinjail "grub-install --force ${nbdavail}"
-runinjail "update-grub"
+  runinjail "grub-install --force ${nbdavail}"
+  runinjail "update-grub"
+
+}
+
+[ $noinstall -eq 0 ] && do_debootstrap
 
 echo "mark: creating vm"
 
 uuid=$(uuidgen)
 
+# vars
 export uuid=$uuid
 export hostname=$hostname
 export ramgb=$ramgb
 export vcpus=$vcpus
 export qemubin=$qemubin
-export qcow2vol=$qcow2vol
+
+# conditional vars (to fail on purpose if something wrong)
+[ "$cdromvol" != "" ]  && export cdromvol=$cdromvol
+[ $noqcow2create -eq 0 ] && export qcow2vol=$qcow2vol
 
 # internal vars
 export _vcpus_max=$_vcpus_max
@@ -312,44 +361,30 @@ export _ramgb_half=$_ramgb_half
 export _ramgb_double=$_ramgb_double
 export _ramgb_p2=$_ramgb_p2
 
-# custom - per libvirt: special cases
-
-case $libvirt in
-
-nvdimm)
-  # create backing files for emulated nvdimms
-  export _nvpath1="/tmp/.nvpath1.$$"
-  export _nvpath2="/tmp/.nvpath2.$$"
-  checkcond dd if=/dev/zero of="$_nvpath1" bs=1M count=2050
-  checkcond dd if=/dev/zero of="$_nvpath2" bs=1M count=2050
-  ;;
-
-*) ;;
-
-esac
-
 cat $scriptdir/libvirt/$libvirt.xml | envsubst >/tmp/vm$$.xml
 
 checkcond virsh define /tmp/vm$$.xml
 
 echo "mark: meta-data and user-data"
 
-checkcond cp $scriptdir/cloud-init/$cloudinit.yaml $fattargetdir/user-data
+if [ $noinstall -eq 0 ];
+then
+  checkcond cp $scriptdir/cloud-init/$cloudinit.yaml $fattargetdir/user-data
+  checkcond echo "\"{instance-id: $uuid)}\"" | teeshush "$fattargetdir/meta-data"
 
-checkcond echo "\"{instance-id: $uuid)}\"" | teeshush "$fattargetdir/meta-data"
+  echo "mark: adjust user-data"
 
-echo "mark: adjust user-data"
+  proxy=$(echo $proxy | sed 's/\:/\\:/g' | sed 's/\./\\./g')
+  repository=$(echo $repository | sed 's/\:/\\:/g' | sed 's/\./\\./g')
 
-proxy=$(echo $proxy | sed 's/\:/\\:/g' | sed 's/\./\\./g')
-repository=$(echo $repository | sed 's/\:/\\:/g' | sed 's/\./\\./g')
-
-sed -i "s:CHANGE_USERNAME:$username:g" $fattargetdir/user-data
-sed -i "s:CHANGE_LAUNCHPAD_ID:$launchpad_id:g" $fattargetdir/user-data
-sed -i "s:CHANGE_PROXY:$proxy:g" $fattargetdir/user-data
-sed -i "s:CHANGE_HTTP_PROXY:$proxy:g" $fattargetdir/user-data
-sed -i "s:CHANGE_HTTPS_PROXY:$proxy:g" $fattargetdir/user-data
-sed -i "s:CHANGE_FTP_PROXY:$proxy:g" $fattargetdir/user-data
-sed -i "s:CHANGE_REPOSITORY:$repository:g" $fattargetdir/user-data
+  sed -i "s:CHANGE_USERNAME:$username:g" $fattargetdir/user-data
+  sed -i "s:CHANGE_LAUNCHPAD_ID:$launchpad_id:g" $fattargetdir/user-data
+  sed -i "s:CHANGE_PROXY:$proxy:g" $fattargetdir/user-data
+  sed -i "s:CHANGE_HTTP_PROXY:$proxy:g" $fattargetdir/user-data
+  sed -i "s:CHANGE_HTTPS_PROXY:$proxy:g" $fattargetdir/user-data
+  sed -i "s:CHANGE_FTP_PROXY:$proxy:g" $fattargetdir/user-data
+  sed -i "s:CHANGE_REPOSITORY:$repository:g" $fattargetdir/user-data
+fi
 
 echo "mark: cleaning things up"
 
