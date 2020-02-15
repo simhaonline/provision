@@ -195,7 +195,7 @@ devices:
   eth0:
     name: eth0
     nictype: bridged
-    parent: virbr0
+    parent: brdefault
     type: nic
   iscsi01:
     name: iscsi01
