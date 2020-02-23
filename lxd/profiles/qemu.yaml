@@ -139,6 +139,7 @@ config:
           PrintMotd no
           TCPKeepAlive yes
           PermitTunnel yes
+          ServerAliveInterval 5
           Banner none
           AcceptEnv LANG LC_* EDITOR PAGER SYSTEMD_EDITOR
           Subsystem	sftp /usr/lib/openssh/sftp-server
@@ -153,6 +154,7 @@ config:
             SendEnv LANG LC_* EDITOR PAGER
             StrictHostKeyChecking no
             HashKnownHosts yes
+            ServerAliveInterval 5
       - path: /etc/sudoers
         content: |
             Defaults env_keep += "LANG LANGUAGE LINGUAS LC_* _XKB_CHARSET"
