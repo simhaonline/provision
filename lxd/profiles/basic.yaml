@@ -122,7 +122,7 @@ config:
           PrintMotd no
           TCPKeepAlive yes
           PermitTunnel yes
-          ServerAliveInterval 5
+          ClientAliveInterval 5
           Banner none
           AcceptEnv LANG LC_* EDITOR PAGER SYSTEMD_EDITOR
           Subsystem	sftp /usr/lib/openssh/sftp-server
