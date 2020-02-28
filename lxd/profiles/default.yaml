@@ -29,7 +29,7 @@ config:
     ftp_proxy: http://192.168.100.250:3142/
     https_proxy: http://192.168.100.250:3142/
     runcmd:
-      - systemctl stop snapd.service
+      - snap install --classic --edge git-ubuntu
       - systemctl stop unattended-upgrades
       - systemctl stop systemd-remount-fs
       - system reset-failed
@@ -104,6 +104,7 @@ config:
       - software-properties-common
       - build-essential
       - devscripts
+      - git-buildpackage
       - ubuntu-dev-tools
       - linux-headers-generic
       - gdb
@@ -173,22 +174,17 @@ config:
       primary:
         - arches: [default]
           uri: http://us.archive.ubuntu.com/ubuntu
-      security:
-        - arches: [default]
-          uri: http://security.ubuntu.com/ubuntu
       sources_list: |
-        # binaries
         deb $MIRROR $RELEASE main restricted universe multiverse
         deb $MIRROR $RELEASE-updates main restricted universe multiverse
         deb $MIRROR $RELEASE-proposed main restricted universe multiverse
         # deb $MIRROR $RELEASE-backports main restricted universe multiverse
-        deb $SECURITY $RELEASE-security universe multiverse
-        # sources
+        # deb $SECURITY $RELEASE-security universe multiverse
         deb-src $MIRROR $RELEASE main restricted universe multiverse
         deb-src $MIRROR $RELEASE-updates main restricted universe multiverse
         deb-src $MIRROR $RELEASE-proposed main restricted universe multiverse
         # deb-src $MIRROR $RELEASE-backports main restricted universe multiverse
-        deb-src $SECURITY $RELEASE-security universe multiverse
+        # deb-src $SECURITY $RELEASE-security universe multiverse
       conf: |
         Acquire::http::Proxy "http://192.168.100.250:3142/";
         Dpkg::Options {
