@@ -64,6 +64,17 @@ config:
       - systemctl disable lvm2-monitor.service
       - systemctl disable lvm2-lvmpolld.socket
       - systemctl disable lvm2-lvmetad.socket
+      - rm -rf /root/.bashrc /root/.gnupg /root/.profile /root/.ssh/
+      - cp -rfp /home/rafaeldtinoco/.ssh /root/.ssh
+      - chown -r root:root /root/.ssh
+      - ln -s /home/rafaeldtinoco/.bashrc /root/.bashrc
+      - ln -s /home/rafaeldtinoco/.vimrc /root/.vimrc
+      - ln -s /home/rafaeldtinoco/.viminfo /root/.viminfo
+      - ln -s /home/rafaeldtinoco/.vim /root/.vim
+      - ln -s /home/rafaeldtinoco/.alias /root/.alias
+      - ln -s /home/rafaeldtinoco/.bash_profile /root/.bash_profile
+      - ln -s /home/rafaeldtinoco/.profile /root/.profile
+      - ln -s /home/rafaeldtinoco/.gnupg /root/.gnupg
     packages:
       - man
       - manpages
