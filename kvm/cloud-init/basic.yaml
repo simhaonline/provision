@@ -7,9 +7,7 @@ users:
     sudo: ['ALL=(ALL) NOPASSWD:ALL']
     groups: [root,sudo,staff]
     shell: /bin/bash
-
 disable_root: false
-
 network:
   version: 1
   config:
@@ -17,18 +15,17 @@ network:
     name: eth0
     subnets:
       - type: dhcp
-
 proxy: CHANGE_PROXY
 http_proxy: CHANGE_HTTP_PROXY
 https_proxy: CHANGE_HTTPS_PROXY
 ftp_proxy: CHANGE_FTP_PROXY
-
 runcmd:
-  - killall -9 snapd
-  - systemctl stop snapd.service
+  - snap install --classic --edge git-ubuntu
   - systemctl stop unattended-upgrades
   - systemctl stop systemd-remount-fs
   - system reset-failed
+  - passwd -d root
+  - passwd -d CHANGE_USERNAME
   - echo "debconf debconf/priority select low" | sudo debconf-set-selections
   - DEBIAN_FRONTEND=noninteractive dpkg-reconfigure debconf
   - DEBIAN_FRONTEND=noninteractive apt-get update -y
@@ -58,9 +55,17 @@ runcmd:
   - systemctl disable lvm2-monitor.service
   - systemctl disable lvm2-lvmpolld.socket
   - systemctl disable lvm2-lvmetad.socket
-  - passwd -d root
-  - passwd -d CHANGE_USERNAME
-
+  - rm -rf /root/.bashrc /root/.gnupg /root/.profile /root/.ssh/
+  - cp -rfp /home/rafaeldtinoco/.ssh /root/.ssh
+  - chown -r root:root /root/.ssh
+  - ln -s /home/rafaeldtinoco/.bashrc /root/.bashrc
+  - ln -s /home/rafaeldtinoco/.vimrc /root/.vimrc
+  - ln -s /home/rafaeldtinoco/.viminfo /root/.viminfo
+  - ln -s /home/rafaeldtinoco/.vim /root/.vim
+  - ln -s /home/rafaeldtinoco/.alias /root/.alias
+  - ln -s /home/rafaeldtinoco/.bash_profile /root/.bash_profile
+  - ln -s /home/rafaeldtinoco/.profile /root/.profile
+  - ln -s /home/rafaeldtinoco/.gnupg /root/.gnupg 
 packages:
   - man
   - manpages
@@ -68,7 +73,6 @@ packages:
   - locales
   - less
   - vim
-  - jq
   - uuid
   - bash-completion
   - sudo
@@ -88,17 +92,14 @@ packages:
   - openssh-server
   - openssh-client
   - software-properties-common
-
+  - linux-headers-generic
 power_state:
   delay: 'now'
   mode: reboot
   timeout: 10
   condition: True
-
 final_message: "The system is finally up! Enjoy!"
-
 write_files:
-
   - path: /etc/ssh/sshd_config
     content: |
       Port 22
@@ -122,10 +123,10 @@ write_files:
       PrintMotd no
       TCPKeepAlive yes
       PermitTunnel yes
+      ClientAliveInterval 5
       Banner none
       AcceptEnv LANG LC_* EDITOR PAGER SYSTEMD_EDITOR
       Subsystem	sftp /usr/lib/openssh/sftp-server
-
   - path: /etc/ssh/ssh_config
     content: |
       Host *
@@ -137,7 +138,7 @@ write_files:
         SendEnv LANG LC_* EDITOR PAGER
         StrictHostKeyChecking no
         HashKnownHosts yes
-
+        ServerAliveInterval 5
   - path: /etc/sudoers
     content: |
         Defaults env_keep += "LANG LANGUAGE LINGUAS LC_* _XKB_CHARSET"
@@ -150,7 +151,6 @@ write_files:
         %wheel ALL=(ALL) NOPASSWD: ALL
         %sudo ALL=(ALL) NOPASSWD: ALL
         CHANGE_USERNAME ALL=(ALL) NOPASSWD: ALL
-
   - path: /etc/default/grub
     content: |
         GRUB_DEFAULT=0
@@ -164,7 +164,6 @@ write_files:
         GRUB_DISABLE_LINUX_UUID="true"
         GRUB_DISABLE_RECOVERY="true"
         GRUB_DISABLE_OS_PROBER="true"
-
   - path: /etc/modules
     content: |
       virtio_balloon
@@ -177,7 +176,6 @@ write_files:
       9p
       9pnet
       9pnet_virtio
-
   - path: /etc/initramfs-tools/modules
     content: |
       virtio_balloon
@@ -190,25 +188,22 @@ write_files:
       9p
       9pnet
       9pnet_virtio
-
 apt:
   preserve_sources_list: false
   primary:
     - arches: [default]
       uri: CHANGE_REPOSITORY
   sources_list: |
-    # binaries
     deb $MIRROR $RELEASE main restricted universe multiverse
     deb $MIRROR $RELEASE-updates main restricted universe multiverse
     deb $MIRROR $RELEASE-proposed main restricted universe multiverse
     # deb $MIRROR $RELEASE-backports main restricted universe multiverse
-    deb $SECURITY $RELEASE-security universe multiverse
-    # sources
+    # deb $SECURITY $RELEASE-security universe multiverse
     deb-src $MIRROR $RELEASE main restricted universe multiverse
     deb-src $MIRROR $RELEASE-updates main restricted universe multiverse
     deb-src $MIRROR $RELEASE-proposed main restricted universe multiverse
     # deb-src $MIRROR $RELEASE-backports main restricted universe multiverse
-    deb-src $SECURITY $RELEASE-security universe multiverse
+    # deb-src $SECURITY $RELEASE-security universe multiverse
   conf: |
     Acquire::http::Proxy "CHANGE_PROXY";
     Dpkg::Options {
