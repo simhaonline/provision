@@ -211,13 +211,9 @@ apt:
     deb $MIRROR $RELEASE main restricted universe multiverse
     deb $MIRROR $RELEASE-updates main restricted universe multiverse
     deb $MIRROR $RELEASE-proposed main restricted universe multiverse
-    # deb $MIRROR $RELEASE-backports main restricted universe multiverse
-    # deb $SECURITY $RELEASE-security universe multiverse
     deb-src $MIRROR $RELEASE main restricted universe multiverse
     deb-src $MIRROR $RELEASE-updates main restricted universe multiverse
     deb-src $MIRROR $RELEASE-proposed main restricted universe multiverse
-    # deb-src $MIRROR $RELEASE-backports main restricted universe multiverse
-    # deb-src $SECURITY $RELEASE-security universe multiverse
   conf: |
     Acquire::http::Proxy "CHANGE_PROXY";
     Dpkg::Options {
@@ -227,7 +223,6 @@ apt:
   sources:
     debug.list:
       source: |
-        # debug symbols
         # deb http://ddebs.ubuntu.com $RELEASE main restricted universe multiverse
         # deb http://ddebs.ubuntu.com $RELEASE-updates main restricted universe multiverse
         # deb http://ddebs.ubuntu.com $RELEASE-proposed main restricted universe multiverse
