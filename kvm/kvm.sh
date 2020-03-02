@@ -245,33 +245,26 @@ do_debootstrap() {
 
   echo "mark: /etc/fstab"
 
-  echo """## /etc/fstab
-
-LABEL=MYROOT / ext4 noatime,nodiratime,relatime,discard,errors=remount-ro 0 1
+  echo """LABEL=MYROOT / ext4 noatime,nodiratime,relatime,discard,errors=remount-ro 0 1
 
 # p9filesystem (check kvm/libvirt/extras/p9filesystem/p9-{root,home}.xml
 
 # root /root 9p rw,noatime,nodiratime,relatime,sync,dirsync,cache=fscache,trans=virtio,noauto,x-systemd.automount,version=9p2000.L,msize=262144,access=client,posixacl 0 0
 # home /home 9p rw,noatime,nodiratime,relatime,sync,dirsync,cache=fscache,trans=virtio,noauto,x-systemd.automount,version=9p2000.L,msize=262144,access=client,posixacl 0 0
-
-## end of file""" | teeshush "$targetdir/etc/fstab"
+""" | teeshush "$targetdir/etc/fstab"
 
   echo "mark: /etc/network/interfaces"
 
-  echo """## /etc/network/interfaces
-
-auto lo
+  echo """auto lo
 iface lo inet loopback
 
 auto eth0
 iface eth0 inet dhcp
-
-end of file""" | teeshush "$targetdir/etc/network/interfaces"
+""" | teeshush "$targetdir/etc/network/interfaces"
 
   echo "mark: /etc/modules"
 
-  echo """## /etc/modules
-virtio_balloon
+  echo """virtio_balloon
 virtio_blk
 virtio_net
 virtio_pci
@@ -281,12 +274,11 @@ ext4
 9p
 9pnet
 9pnet_virtio
-## end of file""" | teeshush "$targetdir/etc/modules"
+""" | teeshush "$targetdir/etc/modules"
 
   echo "mark: /etc/default/grub"
 
-  echo """## /etc/default/grub
-GRUB_DEFAULT=0
+  echo """GRUB_DEFAULT=0
 GRUB_HIDDEN_TIMEOUT_QUIET=true
 GRUB_TIMEOUT=2
 GRUB_DISTRIBUTOR=$(lsb_release -i -s 2>/dev/null || echo Debian)
@@ -296,18 +288,15 @@ GRUB_TERMINAL=serial
 GRUB_SERIAL_COMMAND=\"serial --speed=115200 --unit=0 --word=8 --parity=no --stop=1\"
 GRUB_DISABLE_LINUX_UUID=\"true\"
 GRUB_DISABLE_RECOVERY=\"true\"
-GRUB_DISABLE_OS_PROBER=\"true\"
-## end of file""" | teeshush "$targetdir/etc/default/grub"
+GRUB_DISABLE_OS_PROBER=\"true\"""" | teeshush "$targetdir/etc/default/grub"
 
   echo "mark: /etc/apt/sources.list"
 
   [ $distro_devel -eq 1 ] && distro="focal"
 
-  echo """## /etc/apt/sources.list
-deb $repository $distro main restricted universe multiverse
+  echo """deb $repository $distro main restricted universe multiverse
 deb $repository $distro-updates main restricted universe multiverse
-deb $repository $distro-proposed main restricted universe multiverse
-## end of file""" | teeshush "$targetdir/etc/apt/sources.list"
+deb $repository $distro-proposed main restricted universe multiverse""" | teeshush "$targetdir/etc/apt/sources.list"
 
   echo "mark: update and upgrade"
 
