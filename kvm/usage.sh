@@ -4,7 +4,7 @@
 
 getoptkvm() {
 
-  while getopts ":c:m:n:t:d:p:l:u:r:i:o:kqhw" opt; do
+  while getopts ":c:m:n:t:d:l:u:r:i:o:kqh" opt; do
     case ${opt} in
     c)
       vcpus=$OPTARG
@@ -32,11 +32,6 @@ getoptkvm() {
       distro=$OPTARG
       echo "option: distro=$distro"
       ;;
-    p)
-      # shellcheck disable=SC2034
-      proxy=$OPTARG
-      echo "option: proxy=$proxy"
-      ;;
     l)
       launchpad_id=$OPTARG
       echo "option: launchpad_id=$launchpad_id"
@@ -52,10 +47,6 @@ getoptkvm() {
     i)
       libvirt=$OPTARG
       echo "option: libvirt=libvirt/$libvirt.xml"
-      ;;
-    w)
-      wait=1
-      echo "option: wait vm"
       ;;
     o)
       cdromvol=$OPTARG
@@ -78,16 +69,14 @@ getoptkvm() {
       printf "\t-m <mem.GB>\t\t- memory size\n"
       printf "\t-n <vm.name>\t\t- virtual machine name\n"
       printf "\t-t <cloudinit>\t\t- default/devel (check cloud-init/*.yaml files)\n"
-      printf "\t-i <libvirt>\t\t- vanilla/numa/... (check libvirt/*.xmlfiles)\n"
-      printf "\t-d <ubuntu.codename>\t- xenial/bionic/disco/eoan/focal (default: stable)\n"
+      printf "\t-i <libvirt>\t\t- vanilla/numa/... (check libvirt/*.xml files)\n"
+      printf "\t-d <distro>\t\t- xenial/bionic/disco/eoan/focal (default: stable)\n"
       printf "\t-u <username>\t\t- as 1000:1000 in the installed vm (default: ubuntu)\n"
       printf "\t-l <launchpad_id>\t- for the ssh key import (default: rafaeldtinoco)\n"
-      printf "\t-p <proxy>\t\t- proxy for http/https/ftp\n"
       printf "\t-r <repo.url>\t\t- url for the ubuntu mirror (default: us.archive)\n"
       printf "\t-o <isofile>\t\t- file containing iso image to be used as cdrom\n"
       printf "\t-k\t\t\t- do not attempt to install anything (livecd cases)\n"
       printf "\t-q\t\t\t- do not attempt to create qcow2 volumes (livecd cases)\n"
-      printf "\t-w\t\t\t- wait until cloud-init is finished (after 1st boot)\n"
       printf "\n"
       exit 0
       ;;

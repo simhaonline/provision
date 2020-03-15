@@ -86,26 +86,3 @@ checkpkgexists() {
 checkpkg() {
   dpkg -l $1 > /dev/null 2>&1 || exiterr "error: pkg $1 is not installed"
 }
-
-# wait vm to be available
-
-waitvm() {
-
-  exec 3>/dev/null
-
-  donecmd="cloud-init status | grep -q done"
-
-  time=0; timeout=300;      # 300 seconds waiting for machine
-                            # to be provisioned and have cloud-init
-                            # to finish its duties
-  while true; do
-    ssh $username@$hostname "$donecmd" 1>&3 2>&3 && break || {
-      if [ $time -gt $timeout ]; then
-        exiterr "error: timeout connecting into $hostname"
-      fi
-    }
-    time=$((time+1)) ; sleep 1;
-  done
-
-  exec 3>&-
-}

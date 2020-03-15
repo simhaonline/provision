@@ -37,8 +37,6 @@ hostname=""
 cloudinit=""
 username=""
 launchpad_id=""
-proxy=""
-wait=0
 cdromvol=""
 noinstall=0
 noqcow2create=0
@@ -114,7 +112,6 @@ do_checkqcow2() {
   checknotfile $qcow2vol
 }
 
-
 [ $noqcow2create -eq 0 ] && do_checkqcow2
 
 cleanup() {
@@ -155,12 +152,10 @@ cleanup() {
     rmdir $fattargetdir
   fi
 
-  if [ $wait -ne 0 ];
-  then
-    echo "mark: waiting cloud-init to complete"
-    checkcond virsh start $hostname
-    waitvm
-  fi
+  echo "mark: starting virtual machine $hostname"
+  virsh start $hostname >> $output 2>&1
+  echo "note: don't forget to wait cloud-init to finish"
+  echo "note: cloud-init will reboot virtual machine 1 time"
 }
 
 trap cleanup EXIT
@@ -245,7 +240,8 @@ do_debootstrap() {
 
   echo "mark: /etc/fstab"
 
-  echo """LABEL=MYROOT / ext4 noatime,nodiratime,relatime,discard,errors=remount-ro 0 1
+  echo """
+LABEL=MYROOT / ext4 noatime,nodiratime,relatime,discard,errors=remount-ro 0 1
 
 # p9filesystem (check kvm/libvirt/extras/p9filesystem/p9-{root,home}.xml
 
@@ -259,8 +255,7 @@ do_debootstrap() {
 iface lo inet loopback
 
 auto eth0
-iface eth0 inet dhcp
-""" | teeshush "$targetdir/etc/network/interfaces"
+iface eth0 inet dhcp""" | teeshush "$targetdir/etc/network/interfaces"
 
   echo "mark: /etc/modules"
 
@@ -273,13 +268,12 @@ virtio
 ext4
 9p
 9pnet
-9pnet_virtio
-""" | teeshush "$targetdir/etc/modules"
+9pnet_virtio""" | teeshush "$targetdir/etc/modules"
 
   echo "mark: /etc/default/grub"
 
   echo """GRUB_DEFAULT=0
-GRUB_HIDDEN_TIMEOUT_QUIET=true
+GRUB_HIDDEN_TIMEOUT_QUIET=false
 GRUB_TIMEOUT=2
 GRUB_DISTRIBUTOR=$(lsb_release -i -s 2>/dev/null || echo Debian)
 GRUB_CMDLINE_LINUX_DEFAULT="\"root=/dev/vda2 console=tty0 console=ttyS0,38400n8 apparmor=0 net.ifnames=0 elevator=noop\""
@@ -350,6 +344,24 @@ export _ramgb_half=$_ramgb_half
 export _ramgb_double=$_ramgb_double
 export _ramgb_p2=$_ramgb_p2
 
+checkfile $scriptdir/libvirt/$libvirt.xml
+
+echo "mark: kvm profiles sanity checks"
+
+if [[ $libvirt == *"livecd"* ]];
+then
+  if [ "$cdromvol" == "" ]; then
+    exiterr "error: livecd* kvm profiles need a cdrom volume"
+  fi
+fi
+
+if [[ $libvirt == *"livecdinstall"* ]];
+then
+  if [ $noqcow2create -eq 1 ]; then
+    exiterr "error: livecdinstall kvm profile can't be used with -q option"
+  fi
+fi
+
 cat $scriptdir/libvirt/$libvirt.xml | envsubst >/tmp/vm$$.xml
 
 checkcond virsh define /tmp/vm$$.xml
@@ -363,15 +375,10 @@ then
 
   echo "mark: adjust user-data"
 
-  proxy=$(echo $proxy | sed 's/\:/\\:/g' | sed 's/\./\\./g')
   repository=$(echo $repository | sed 's/\:/\\:/g' | sed 's/\./\\./g')
 
   sed -i "s:CHANGE_USERNAME:$username:g" $fattargetdir/user-data
   sed -i "s:CHANGE_LAUNCHPAD_ID:$launchpad_id:g" $fattargetdir/user-data
-  sed -i "s:CHANGE_PROXY:$proxy:g" $fattargetdir/user-data
-  sed -i "s:CHANGE_HTTP_PROXY:$proxy:g" $fattargetdir/user-data
-  sed -i "s:CHANGE_HTTPS_PROXY:$proxy:g" $fattargetdir/user-data
-  sed -i "s:CHANGE_FTP_PROXY:$proxy:g" $fattargetdir/user-data
   sed -i "s:CHANGE_REPOSITORY:$repository:g" $fattargetdir/user-data
 fi
 
