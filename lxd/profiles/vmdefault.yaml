@@ -21,7 +21,7 @@ config:
       version: 1
       config:
       - type: physical
-        name: eth0
+        name: enp5s0
         subnets:
           - type: dhcp
     proxy: http://192.168.100.250:3142/
@@ -199,7 +199,7 @@ config:
             # deb http://ddebs.ubuntu.com $RELEASE-updates main restricted universe multiverse
             # deb http://ddebs.ubuntu.com $RELEASE-proposed main restricted universe multiverse
           keyid: C8CAB6595FDFF622
-description: cluster
+description: default
 devices:
   lxdbr0:
     nictype: bridged
@@ -233,6 +233,6 @@ devices:
     path: /root
     source: /root
     type: disk
-name: cluster
+name: default
 used_by: []
 

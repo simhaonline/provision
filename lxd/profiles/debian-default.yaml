@@ -185,10 +185,9 @@ config:
         };
 description: debian-default
 devices:
-  eth0:
-    name: eth0
+  lxdbr0:
     nictype: bridged
-    parent: brdefault
+    parent: lxdbr0
     type: nic
   iconsdir:
     path: /usr/share/icons

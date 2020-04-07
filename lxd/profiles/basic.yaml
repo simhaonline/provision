@@ -192,10 +192,9 @@ config:
           keyid: C8CAB6595FDFF622
 description: basic
 devices:
-  eth0:
-    name: eth0
+  lxdbr0:
     nictype: bridged
-    parent: brdefault
+    parent: lxdbr0
     type: nic
   iconsdir:
     path: /usr/share/icons
